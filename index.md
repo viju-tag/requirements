@@ -12,3 +12,4 @@ Static HTML requirements and reports.
 - [Story Characters](./story-characters.html)
 - [Gossip Harbor Analytics System](./gossip-harbor-analytics-system.html)
 - [Gossip Harbor Order Reference](./gossip-harbor-order-reference.html)
+- [Gossip Harbor Systems and Events](./gossip-harbor-systems-and-events.html)
