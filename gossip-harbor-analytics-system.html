@@ -1,0 +1,1324 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="The complete reviewed report on Gossip Harbor 3.95.0 analytics: toolkit, event delivery, consent, attribution, payloads, and source evidence.">
+<meta name="color-scheme" content="light">
+<title>Gossip Harbor 3.95.0 — Analytics System Report</title>
+<style>
+  :root { --ink: #213a35; --muted: #61746b; --accent: #235e4c; --paper: #fcfbf7; --surface: #fff; --line: #dce4dc; --wash: #eef3eb; --mono: 'Cascadia Code', Consolas, monospace; }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html { scroll-behavior: smooth; scroll-padding-top: 36px; }
+  body { margin: 0; background: var(--paper); color: var(--ink); font: 16px/1.75 'Segoe UI', system-ui, sans-serif; }
+  a { color: var(--accent); text-underline-offset: 3px; }
+  a:focus-visible, button:focus-visible, summary:focus-visible, [tabindex]:focus-visible { outline: 3px solid #a87125; outline-offset: 4px; }
+  .skip-link { position: fixed; top: 12px; left: 12px; padding: 8px 16px; background: white; z-index: 20; transform: translateY(-160%); }
+  .skip-link:focus { transform: translateY(0); }
+  .masthead { border-bottom: 1px solid var(--line); background: #173c32; color: #f6f5ed; }
+  .masthead-inner { max-width: 1560px; margin: auto; padding: 18px 40px; display: flex; justify-content: space-between; align-items: center; gap: 16px; }
+  .brand { font-size: 13px; font-weight: 650; letter-spacing: .11em; text-transform: uppercase; }
+  .build-tag { font: 12px/1.5 var(--mono); border: 1px solid #6b877d; padding: 5px 10px; border-radius: 4px; color: #dce9dc; }
+  .layout { max-width: 1560px; margin: auto; display: grid; grid-template-columns: 290px minmax(0, 1fr); gap: 60px; padding: 44px 40px 90px; }
+  .sidebar { align-self: start; position: sticky; top: 24px; max-height: calc(100vh - 48px); overflow-y: auto; padding: 2px 16px 24px 0; scrollbar-width: thin; }
+  .sidebar h2 { margin: 0 0 16px; font-size: 16px; }
+  .toc-group { margin-bottom: 26px; }
+  .toc-label { margin: 0 0 8px; color: var(--muted); font-size: 11px; font-weight: 750; letter-spacing: .08em; text-transform: uppercase; }
+  .toc-group ul { margin: 0; padding: 0; list-style: none; }
+  .toc-group a { display: block; padding: 6px 9px; border-left: 2px solid transparent; color: #54685e; font-size: 13px; line-height: 1.45; text-decoration: none; border-radius: 0 4px 4px 0; }
+  .toc-group a:hover { background: var(--wash); color: var(--accent); }
+  .toc-group a[aria-current="location"] { background: #e5eee2; border-left-color: var(--accent); color: #174f3e; font-weight: 650; }
+  .sidebar-note { padding-top: 18px; border-top: 1px solid var(--line); color: var(--muted); font-size: 12px; line-height: 1.6; }
+  main { min-width: 0; max-width: 1060px; }
+  .hero { padding: 2px 0 30px; border-bottom: 1px solid var(--line); margin-bottom: 38px; }
+  .eyebrow { margin: 0 0 14px; font-size: 12px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--accent); }
+  h1 { margin: 0; max-width: 890px; font-size: clamp(32px, 3.2vw, 47px); line-height: 1.2; letter-spacing: -.025em; font-weight: 650; }
+  .hero-description { max-width: 800px; margin: 20px 0 24px; color: var(--muted); font-size: 17px; }
+  .metadata { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px 28px; margin: 28px 0 0; padding-top: 23px; border-top: 1px solid var(--line); }
+  .metadata > div:last-child, .metadata > div:nth-last-child(2) { grid-column: 1 / -1; }
+  .metadata dt { color: var(--muted); text-transform: uppercase; letter-spacing: .07em; font-size: 10px; font-weight: 750; margin-bottom: 5px; }
+  .metadata dd { margin: 0; font-size: 13px; line-height: 1.6; }
+  .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 23px; }
+  .button { display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--line); border-radius: 5px; padding: 8px 14px; background: var(--surface); color: var(--accent); font: 600 13px/1.5 'Segoe UI', system-ui, sans-serif; text-decoration: none; cursor: pointer; }
+  .button.primary { border-color: var(--accent); background: var(--accent); color: white; }
+  .button:hover { filter: brightness(.95); }
+  .mobile-toc { display: none; }
+  article p { margin: 16px 0; }
+  article li { margin-bottom: 9px; }
+  article ul, article ol { padding-left: 25px; }
+  article h2, article h3, article h4, article h5 { line-height: 1.35; }
+  .part-heading { margin: 66px 0 32px; padding: 22px 24px; border: 1px solid #cbdccb; border-left: 4px solid var(--accent); background: var(--wash); border-radius: 0 6px 6px 0; font-size: 25px; letter-spacing: -.02em; }
+  .section-heading { margin: 45px 0 20px; font-size: 25px; letter-spacing: -.018em; font-weight: 650; }
+  .subsection-heading { margin: 32px 0 14px; font-size: 19px; font-weight: 650; }
+  .heading-anchor { margin-left: 8px; font-weight: 400; font-size: .72em; text-decoration: none; opacity: 0; color: var(--muted); }
+  :is(h2,h3,h4,h5):hover .heading-anchor, .heading-anchor:focus-visible { opacity: 1; }
+  article hr { border: 0; height: 1px; background: var(--line); margin: 48px 0; }
+  strong { font-weight: 650; }
+  code { background: #f0f2ec; border-radius: 3px; padding: 2px 4px; font: .83em/1.55 var(--mono); overflow-wrap: anywhere; }
+  code.source-reference { background: transparent; padding: 0; color: #637067; font-size: .74em; }
+  pre { padding: 22px; border-radius: 7px; background: #18382e; color: #edf4e9; border: 1px solid #274b3d; overflow: auto; font-size: 14px; }
+  pre code { background: none; padding: 0; color: inherit; font-size: 1em; overflow-wrap: normal; }
+  .table-scroll { overflow-x: auto; max-width: 100%; border: 1px solid var(--line); border-radius: 7px; margin: 24px 0; background: var(--surface); }
+  table { border-collapse: collapse; width: 100%; text-align: left; font-size: 13px; line-height: 1.65; }
+  th { padding: 14px 17px; background: #e8eee3; font-weight: 700; color: #284c3c; text-align: left; vertical-align: top; border-bottom: 1px solid #cddbcc; }
+  td { padding: 14px 17px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--line); }
+  tr:last-child td { border-bottom: 0; }
+  tr:nth-child(even) td { background: #fafbf7; }
+  table td:first-child { min-width: 150px; width: 22%; }
+  table td:nth-child(2) { min-width: 190px; }
+  table td:nth-child(3) { min-width: 135px; }
+  .footer { padding-top: 28px; margin-top: 50px; border-top: 1px solid var(--line); font-size: 12px; color: var(--muted); display: flex; justify-content: space-between; gap: 18px; }
+  @media (max-width: 1100px) {
+    .layout { grid-template-columns: 240px minmax(0, 1fr); gap: 32px; padding: 34px 28px 70px; }
+    .masthead-inner { padding-inline: 28px; }
+    .sidebar { padding-right: 6px; }
+  }
+  @media (max-width: 800px) {
+    .masthead-inner { padding: 16px 20px; }
+    .brand { font-size: 11px; }
+    .layout { display: block; padding: 30px 20px 60px; }
+    .sidebar { display: none; }
+    .mobile-toc { display: block; margin: 0 0 30px; padding: 14px 16px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); }
+    .mobile-toc summary { cursor: pointer; font-weight: 650; font-size: 14px; }
+    .mobile-toc nav { margin-top: 20px; }
+    h1 { font-size: 34px; }
+    .hero-description { font-size: 16px; }
+    .metadata { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+    .metadata > div:nth-child(3) { grid-column: 1 / -1; }
+    .part-heading { font-size: 22px; padding: 18px; margin-top: 46px; }
+    .section-heading { font-size: 23px; }
+    .subsection-heading { font-size: 18px; }
+    th, td { padding: 12px; }
+    table { min-width: 620px; }
+    article { font-size: 15px; }
+    .footer { flex-direction: column; gap: 8px; }
+  }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+  @media print {
+    @page { margin: 18mm; }
+    body { background: white; font-size: 10pt; line-height: 1.5; color: #111; }
+    .masthead, .sidebar, .mobile-toc, .actions, .heading-anchor, .skip-link { display: none !important; }
+    .layout { display: block; padding: 0; max-width: none; }
+    main { max-width: none; }
+    h1 { font-size: 25pt; }
+    .hero { padding: 0 0 16px; }
+    .hero-description { font-size: 11pt; }
+    .metadata dt { font-size: 8pt; }
+    .metadata dd { font-size: 9pt; }
+    .part-heading { break-before: page; margin: 0 0 20px; padding: 10px 12px; font-size: 19pt; }
+    .section-heading { margin-top: 26px; font-size: 16pt; }
+    .subsection-heading { font-size: 12pt; }
+    :is(h1,h2,h3,h4) { break-after: avoid; }
+    p { orphans: 3; widows: 3; }
+    .table-scroll { overflow: visible; border-radius: 0; border: 0; }
+    table { min-width: 0; table-layout: auto; font-size: 8pt; line-height: 1.4; }
+    table td:first-child, table td:nth-child(2), table td:nth-child(3) { min-width: 0; }
+    th, td { padding: 7px; overflow-wrap: anywhere; }
+    thead { display: table-header-group; }
+    tr { break-inside: avoid; }
+    pre { white-space: pre-wrap; background: #f3f5f0; color: #111; border-color: #ccc; font-size: 9pt; break-inside: avoid; }
+    code { overflow-wrap: anywhere; }
+    .footer { font-size: 8pt; }
+  }
+</style>
+</head>
+<body id="top">
+<a class="skip-link" href="#report-content">Skip to report</a>
+<div class="masthead"><div class="masthead-inner"><span class="brand">Game systems / Analytics</span><span class="build-tag">GOSSIP HARBOR · 3.95.0</span></div></div>
+<div class="layout">
+  <aside class="sidebar" aria-label="Report navigation"><h2>Contents</h2><nav aria-label="Table of contents"><div class="toc-group"><p class="toc-label">Start here</p><ul><li><a href="#reading-this-report" data-section-link>Reading this report</a></li></ul></div><div class="toc-group"><p class="toc-label">Part I · High-level understanding</p><ul><li><a href="#1-executive-summary" data-section-link>1. Executive summary</a></li><li><a href="#2-analytics-toolkit-and-responsibility-map" data-section-link>2. Analytics toolkit and responsibility map</a></li><li><a href="#3-what-gossip-harbor-measures-and-why" data-section-link>3. What Gossip Harbor measures and why</a></li><li><a href="#4-high-level-data-flow-and-destinations" data-section-link>4. High-level data flow and destinations</a></li><li><a href="#5-identity-attribution-and-consent-overview" data-section-link>5. Identity, attribution, and consent overview</a></li><li><a href="#6-key-findings-risks-and-unknowns" data-section-link>6. Key findings, risks, and unknowns</a></li></ul></div><div class="toc-group"><p class="toc-label">Part II · Technical deep dive</p><ul><li><a href="#7-initialization-and-analytics-lifecycle" data-section-link>7. Initialization and analytics lifecycle</a></li><li><a href="#8-first-party-bimanager-architecture" data-section-link>8. First-party BIManager architecture</a></li><li><a href="#9-event-schema-and-automatic-enrichment" data-section-link>9. Event schema and automatic enrichment</a></li><li><a href="#10-event-taxonomy-and-domain-coverage" data-section-link>10. Event taxonomy and domain coverage</a></li><li><a href="#11-third-party-and-platform-integrations" data-section-link>11. Third-party and platform integrations</a></li><li><a href="#12-queueing-persistence-batching-and-transport" data-section-link>12. Queueing, persistence, batching, and transport</a></li><li><a href="#13-failure-handling-fallback-ordering-and-deduplication" data-section-link>13. Failure handling, fallback, ordering, and deduplication</a></li><li><a href="#14-remote-configuration-and-server-controlled-mappings" data-section-link>14. Remote configuration and server-controlled mappings</a></li><li><a href="#15-consent-timing-and-sensitive-data-review" data-section-link>15. Consent timing and sensitive-data review</a></li><li><a href="#16-debug-and-operational-controls" data-section-link>16. Debug and operational controls</a></li><li><a href="#17-representative-end-to-end-event-traces" data-section-link>17. Representative end-to-end event traces</a></li><li><a href="#18-evidence-limitations-and-runtime-validation-plan" data-section-link>18. Evidence limitations and runtime validation plan</a></li><li><a href="#19-prioritized-conclusions-and-recommendations" data-section-link>19. Prioritized conclusions and recommendations</a></li></ul></div><div class="toc-group"><p class="toc-label">Appendices</p><ul><li><a href="#appendix-a-first-party-field-and-envelope-reference" data-section-link>Appendix A — First-party field and envelope reference</a></li><li><a href="#appendix-b-event-and-wrapper-catalog" data-section-link>Appendix B — Event and wrapper catalog</a></li><li><a href="#appendix-c-source-index" data-section-link>Appendix C — Source index</a></li><li><a href="#appendix-d-evidence-confidence-and-negative-search-register" data-section-link>Appendix D — Evidence-confidence and negative-search register</a></li></ul></div></nav><p class="sidebar-note">Complete reviewed client analysis.<br>All evidence labels and source references are preserved.</p></aside>
+  <main id="report-content">
+    <header class="hero">
+      <p class="eyebrow">Analytics system report</p><h1>Gossip Harbor 3.95.0 — Analytics System Report</h1>
+      <p class="hero-description">A detailed look at the game's analytics toolkit, event pipeline, attribution, consent flows, and delivery behavior.</p>
+      <div class="actions"><a class="button primary" href="#1-executive-summary">Read executive summary</a><a class="button" href="#part-ii-technical-deep-dive">Jump to technical detail</a><button class="button" type="button" id="print-button" hidden>Print / save PDF</button></div>
+      <dl class="metadata"><div><dt>Build analyzed</dt><dd>Gossip Harbor 3.95.0</dd></div><div><dt>Analysis date</dt><dd>14 September 2026</dd></div><div><dt>Reviewed and corrected</dt><dd>24 September 2026</dd></div><div><dt>Primary evidence</dt><dd>readable decompiled Lua, exported IL2CPP C# interface stubs, and APK/package inventories</dd></div><div><dt>Scope</dt><dd>client-side analytics, attribution, crash diagnostics, advertising measurement, consent timing, persistence, and delivery</dd></div></dl>
+    </header>
+    <details class="mobile-toc"><summary>Table of contents · 19 sections + appendices</summary><nav aria-label="Mobile table of contents"><div class="toc-group"><p class="toc-label">Start here</p><ul><li><a href="#reading-this-report" data-section-link>Reading this report</a></li></ul></div><div class="toc-group"><p class="toc-label">Part I · High-level understanding</p><ul><li><a href="#1-executive-summary" data-section-link>1. Executive summary</a></li><li><a href="#2-analytics-toolkit-and-responsibility-map" data-section-link>2. Analytics toolkit and responsibility map</a></li><li><a href="#3-what-gossip-harbor-measures-and-why" data-section-link>3. What Gossip Harbor measures and why</a></li><li><a href="#4-high-level-data-flow-and-destinations" data-section-link>4. High-level data flow and destinations</a></li><li><a href="#5-identity-attribution-and-consent-overview" data-section-link>5. Identity, attribution, and consent overview</a></li><li><a href="#6-key-findings-risks-and-unknowns" data-section-link>6. Key findings, risks, and unknowns</a></li></ul></div><div class="toc-group"><p class="toc-label">Part II · Technical deep dive</p><ul><li><a href="#7-initialization-and-analytics-lifecycle" data-section-link>7. Initialization and analytics lifecycle</a></li><li><a href="#8-first-party-bimanager-architecture" data-section-link>8. First-party BIManager architecture</a></li><li><a href="#9-event-schema-and-automatic-enrichment" data-section-link>9. Event schema and automatic enrichment</a></li><li><a href="#10-event-taxonomy-and-domain-coverage" data-section-link>10. Event taxonomy and domain coverage</a></li><li><a href="#11-third-party-and-platform-integrations" data-section-link>11. Third-party and platform integrations</a></li><li><a href="#12-queueing-persistence-batching-and-transport" data-section-link>12. Queueing, persistence, batching, and transport</a></li><li><a href="#13-failure-handling-fallback-ordering-and-deduplication" data-section-link>13. Failure handling, fallback, ordering, and deduplication</a></li><li><a href="#14-remote-configuration-and-server-controlled-mappings" data-section-link>14. Remote configuration and server-controlled mappings</a></li><li><a href="#15-consent-timing-and-sensitive-data-review" data-section-link>15. Consent timing and sensitive-data review</a></li><li><a href="#16-debug-and-operational-controls" data-section-link>16. Debug and operational controls</a></li><li><a href="#17-representative-end-to-end-event-traces" data-section-link>17. Representative end-to-end event traces</a></li><li><a href="#18-evidence-limitations-and-runtime-validation-plan" data-section-link>18. Evidence limitations and runtime validation plan</a></li><li><a href="#19-prioritized-conclusions-and-recommendations" data-section-link>19. Prioritized conclusions and recommendations</a></li></ul></div><div class="toc-group"><p class="toc-label">Appendices</p><ul><li><a href="#appendix-a-first-party-field-and-envelope-reference" data-section-link>Appendix A — First-party field and envelope reference</a></li><li><a href="#appendix-b-event-and-wrapper-catalog" data-section-link>Appendix B — Event and wrapper catalog</a></li><li><a href="#appendix-c-source-index" data-section-link>Appendix C — Source index</a></li><li><a href="#appendix-d-evidence-confidence-and-negative-search-register" data-section-link>Appendix D — Evidence-confidence and negative-search register</a></li></ul></div></nav></details>
+    <article id="report-article"><h2 class="section-heading" id="reading-this-report">Reading this report<a class="heading-anchor" href="#reading-this-report" aria-label="Link to Reading this report">#</a></h2>
+<p>This is a static, source-backed analysis of the extracted Android client. It describes what the client is built to do; it does not claim that every packaged SDK is active for every player, that every conditional event fires in production, or that a backend accepts and uses every submitted field.</p>
+<p>Evidence labels used throughout:</p>
+<ul>
+<li><strong>Direct:</strong> readable Lua shows the runtime call or implementation.</li>
+<li><strong>Bridge:</strong> an exported C# or native-facing interface shows the capability, but the implementation is not visible.</li>
+<li><strong>Packaged:</strong> files or assemblies are present in the app package; runtime use is not established by that fact alone.</li>
+<li><strong>Inferred:</strong> the purpose follows from event names, payloads, and call sites, but is not stated as a formal product requirement.</li>
+<li><strong>Not evidenced:</strong> the searched extraction contains no reliable proof of the claimed integration or behavior.</li>
+</ul>
+<p>Paths in citations are relative to the Gossip Harbor 3.95.0 extraction root. In inline citations, <code>.../core</code>, <code>.../base</code>, <code>.../activity</code>, and <code>.../test</code> abbreviate <code>05_gameplay_logic/lua/readable/decompiled/</code>; <code>02_exported_core/.../OneSDK</code> abbreviates <code>02_exported_core/ExportedProject/Assets/Scripts/Assembly-CSharp/OneSDK</code>. Appendix C gives the full paths. Line numbers refer to this extracted build and may not transfer to other versions.</p>
+<hr>
+<h2 class="part-heading" id="part-i-high-level-understanding">Part I — High-Level Understanding<a class="heading-anchor" href="#part-i-high-level-understanding" aria-label="Link to Part I — High-Level Understanding">#</a></h2>
+<h3 class="section-heading" id="1-executive-summary">1. Executive summary<a class="heading-anchor" href="#1-executive-summary" aria-label="Link to 1. Executive summary">#</a></h3>
+<p>Gossip Harbor 3.95.0 uses a broad, layered analytics system rather than a single analytics SDK. Its center is a first-party Lua component named <code>BIManager</code>. Gameplay, economy, user-interface, purchase, advertising, network, session, and performance code call this manager throughout the client. A static search finds 1,067 <code>GM.BIManager:&lt;method&gt;</code> call-site lines across 373 Lua files, including 1,023 <code>Log*</code> call-site lines across 370 files. These counts measure static instrumentation breadth, not runtime event volume.</p>
+<p>The first-party pipeline enriches most events with shared player and app context, queues them in <code>dot_message.dat</code>, batches them, and hands a complete request to <code>HttpManager</code> for retry. Both stages have later save cycles. <code>HttpManager</code> adds the request to <code>CachedRequests</code> before calling <code>Send</code>, but does not force a disk commit at that point; <code>BIManager</code> clears its event queue immediately after the send call. A crash before the next save can therefore lose an event or request. Conversely, an accepted request whose response is lost can be retried and counted twice unless the backend deduplicates it. (<code>05_gameplay_logic/lua/readable/decompiled/core/Model/Network/BI/BIManager.lua:55-102,730-753</code>; <code>.../core/Model/Network/HttpManager.lua:85-168</code>; <code>.../core/Model/DB/DBTableManager.lua:43-64,84-100</code>)</p>
+<p>The client also routes selected marketing and platform events outside the first-party BI path. AppsFlyer is directly used for installation, attribution identity, conversion/deep-link data, purchases, and server-mapped events. Firebase is directly used for analytics identity/properties and mapped events; its Crashlytics-facing API receives diagnostic keys and log breadcrumbs. Platform bridge calls provide a further attribution/event route, including China-specific BDA behavior. Google UMP is used for advertising consent, while advertising is mediated behind a generic OneSDK ad bridge. AppLovin MAX and several mediation adapter resources are packaged, but readable Lua does not select or initialize each adapter directly.</p>
+<p>No Adjust SDK integration is evidenced in the searched build. The client contains legacy fields named <code>adjust</code> and <code>adjust_id</code>, but <code>adjust_id</code> is explicitly populated with the AppsFlyer ID, while <code>adjust</code> carries a server-provided mapping whose destinations are AppsFlyer and Firebase. Searches found no Adjust package, assembly, namespace, configuration object, event object, or API call. Adjust should therefore not appear in a toolkit diagram as an active SDK for this build.</p>
+<p>Privacy is not represented by one universal gate. The fresh global-build dialog acceptance calls Firebase <code>SetConsent</code>; returning accepted users skip that Lua call. The non-global acceptance path starts BDA, and an existing-user bypass can start BDA without a visible region check. On a fresh install, startup logs a <code>session_start</code> with detailed device context and the low BI ID triggers an immediate <code>reqCtx:Send()</code> before the visible privacy-policy check. Global startup also calls Firebase/Crashlytics setup before that check. Actual network egress and native SDK consent enforcement remain unverified. Advertising follows a separate UMP path, but Lua initializes the ad manager before UMP and does not visibly gate rewarded-ad loading on <code>CanRequestAds</code>. (<code>.../core/Model/GlobalManager.lua:119-129</code>; <code>.../core/Model/Network/BI/BIManager.lua:55-96,558-566</code>; <code>.../base/Main.lua:80-89</code>; <code>.../core/Model/GameModel.lua:375-422</code>; <code>.../core/Model/AdModel.lua:31-35,199-223</code>)</p>
+<p>The system is designed to answer product questions about onboarding, progression, merge-board behavior, resource flows, offers and purchases, rewarded ads, activities, UI navigation, reliability, performance, and acquisition. The strongest governance concerns are the volume of default enrichment, requested device identifiers on session events, purchase and ad-revenue context, an active conditional push-token BI path, and code paths capable of carrying social login/profile values. A sensitive SDK-login wrapper exists, but no live Lua call site was found for it; it should be treated as a risky capability, not as proven production transmission.</p>
+<h3 class="section-heading" id="2-analytics-toolkit-and-responsibility-map">2. Analytics toolkit and responsibility map<a class="heading-anchor" href="#2-analytics-toolkit-and-responsibility-map" aria-label="Link to 2. Analytics toolkit and responsibility map">#</a></h3>
+<p>This section is the high-level inventory of the entire observed toolkit and each component&#39;s specific use in Gossip Harbor.</p>
+<div class="table-scroll" role="region" tabindex="0" aria-label="Report table; scroll horizontally if needed"><table>
+<thead>
+<tr>
+<th>Component</th>
+<th>Specific use in Gossip Harbor 3.95.0</th>
+<th>Evidence</th>
+<th>Important boundary</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>First-party <code>BIManager</code></strong></td>
+<td>Primary product analytics: gameplay, economy, progression, UI, tutorial, purchase, ad, session, network, performance, and diagnostics. Adds common context, queues, batches, envelopes, and submits events.</td>
+<td><strong>Direct</strong></td>
+<td>Queue serialization happens later; backend storage, transformations, dashboards, retention, and consumers are unavailable.</td>
+</tr>
+<tr>
+<td><strong><code>HttpManager</code> saved requests</strong></td>
+<td>Adds complete BI requests to a cached table for retry; removes them on success and increases delay after failure.</td>
+<td><strong>Direct</strong></td>
+<td>A later database save is needed for disk durability; server idempotency and acceptance are unknown.</td>
+</tr>
+<tr>
+<td><strong><code>OperBIManager</code> / operational service</strong></td>
+<td>Secondary marketing/operations route. Sends install and purchase events and applies server-provided mappings to AppsFlyer and Firebase.</td>
+<td><strong>Direct</strong></td>
+<td>The server-side rules and destination reporting are unavailable.</td>
+</tr>
+<tr>
+<td><strong>OneSDK</strong></td>
+<td>Common bridge/facade through which Lua reaches AppsFlyer, Firebase, ads, platform attribution, Facebook, install referrer, ATT, and related native services.</td>
+<td><strong>Direct + Bridge</strong></td>
+<td>Exported IL2CPP C# bodies are often empty; Lua call sites establish orchestration, not native internals.</td>
+</tr>
+<tr>
+<td><strong>AppsFlyer</strong></td>
+<td>Attribution identity, AppsFlyer ID/CUID, conversion data, attribution data, deep links, install event, purchase event, invite links, and server-mapped events.</td>
+<td><strong>Direct + Bridge + Packaged</strong></td>
+<td>Attribution-network logic and AppsFlyer dashboard configuration are not visible.</td>
+</tr>
+<tr>
+<td><strong>Firebase Analytics-facing API</strong></td>
+<td>Sets Firebase user ID, sets an <code>idfa</code> user property in global startup, logs level-up on global builds and server-mapped events when configured, and exposes a generic event API.</td>
+<td><strong>Direct + Bridge</strong></td>
+<td>Native consent defaults, upload cadence, and Firebase project configuration are not visible.</td>
+</tr>
+<tr>
+<td><strong>Firebase Crashlytics-facing API</strong></td>
+<td>Sets startup diagnostic keys and writes breadcrumbs for payment actions, ad outcomes, SSO state, and resource loading.</td>
+<td><strong>Direct + Bridge</strong></td>
+<td>Crash capture/upload behavior is native and not established by the Lua calls alone.</td>
+</tr>
+<tr>
+<td><strong>Platform analytics / attribution bridge</strong></td>
+<td>Sends standardized commerce, resource, tutorial, level, shop, and mini-game events through <code>SDK_TrackEvent</code> and <code>Attr_TrackEvent</code>.</td>
+<td><strong>Direct + Bridge</strong></td>
+<td>The ultimate vendor or vendors behind every platform call cannot be resolved from the bridge stubs.</td>
+</tr>
+<tr>
+<td><strong>ByteDance/BDA path</strong></td>
+<td>Starts event sending after non-global privacy acceptance or through an existing-user bypass, and adds a BDA click ID to operational login context.</td>
+<td><strong>Direct + Bridge</strong></td>
+<td>The existing-user call has no visible region check; native upload details are unavailable.</td>
+</tr>
+<tr>
+<td><strong>Google UMP</strong></td>
+<td>Advertising-consent form, <code>CanRequestAds</code> state, and privacy-options entry. Remote configuration controls whether the form is shown.</td>
+<td><strong>Direct + Bridge</strong></td>
+<td>Lua initializes the ad manager first and does not visibly gate ad loading on <code>CanRequestAds</code>; native enforcement is unknown.</td>
+</tr>
+<tr>
+<td><strong>OneSDK ad manager</strong></td>
+<td>Initializes, loads, shows, and observes rewarded ads; exposes loaded network and revenue/currency/network/country data to Lua.</td>
+<td><strong>Direct + Bridge</strong></td>
+<td>The readable client uses the generic facade rather than individual network SDK APIs.</td>
+</tr>
+<tr>
+<td><strong>AppLovin MAX and mediation adapters</strong></td>
+<td>AppLovin/MAX assemblies/settings and several branded adapter resources are present in the package, consistent with mediation capability.</td>
+<td><strong>Packaged</strong></td>
+<td>Package presence does not prove that every adapter initializes, serves an impression, or receives data.</td>
+</tr>
+<tr>
+<td><strong>Microfun profiler / performance BI</strong></td>
+<td>Captures startup milestones and performance diagnostics such as session, device, memory, frame rate, and frame hiccups.</td>
+<td><strong>Direct + Bridge</strong></td>
+<td>Backend aggregation and operational alerting are unknown.</td>
+</tr>
+<tr>
+<td><strong>Facebook manager</strong></td>
+<td>Social login, profile/friend/invite functionality, and server submission of social authorization data in relevant flows.</td>
+<td><strong>Direct + Bridge + Packaged</strong></td>
+<td>This is not evidence of Facebook Analytics as a product-analytics destination.</td>
+</tr>
+<tr>
+<td><strong>Install referrer / deep-link interfaces</strong></td>
+<td>OneSDK exposes install-referrer and deep-link state used as acquisition/entry context.</td>
+<td><strong>Bridge; some values consumed directly</strong></td>
+<td>Provider-side parsing and attribution rules are unavailable.</td>
+</tr>
+<tr>
+<td><strong>Adjust</strong></td>
+<td>No confirmed use.</td>
+<td><strong>Not evidenced</strong></td>
+<td><code>adjust</code>/<code>adjust_id</code> are legacy schema labels here; the values route to AppsFlyer/Firebase or contain an AppsFlyer ID.</td>
+</tr>
+</tbody></table></div>
+<p>Key sources: <code>.../core/Model/Network/BI/BIManager.lua</code>; <code>.../core/Model/Network/HttpManager.lua</code>; <code>.../core/Model/Network/Oper/OperBIManager.lua</code>; <code>.../core/Model/Network/Oper/OperManager.lua</code>; <code>02_exported_core/ExportedProject/Assets/Scripts/Assembly-CSharp/OneSDK/*.cs</code>; <code>00_metadata/apk_inventory.csv</code>.</p>
+<h3 class="section-heading" id="3-what-gossip-harbor-measures-and-why">3. What Gossip Harbor measures and why<a class="heading-anchor" href="#3-what-gossip-harbor-measures-and-why" aria-label="Link to 3. What Gossip Harbor measures and why">#</a></h3>
+<p>The client does not contain a formal analytics measurement plan, so the “why” column below is an <strong>inference</strong> from event names, payloads, and placement.</p>
+<div class="table-scroll" role="region" tabindex="0" aria-label="Report table; scroll horizontally if needed"><table>
+<thead>
+<tr>
+<th>Measurement area</th>
+<th>Concrete examples found</th>
+<th>Likely product or operational use</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Sessions and identity</td>
+<td><code>session_start</code>, <code>session_end</code>, login request/result, user ID synchronization, installation ID, BI ID</td>
+<td>Active use, session boundaries, account linkage, cohorting, reliability</td>
+</tr>
+<tr>
+<td>Onboarding and tutorial</td>
+<td>Tutorial steps and completion, early-level milestones, first-session activity</td>
+<td>Funnel completion, friction detection, new-player conversion</td>
+</tr>
+<tr>
+<td>Progression</td>
+<td>Level start/complete/up, task progress, orders, activities, pass tasks</td>
+<td>Pacing, difficulty, content engagement, progression bottlenecks</td>
+</tr>
+<tr>
+<td>Merge-board behavior</td>
+<td>Merge, split, spread, generator/item actions, obstacle rewards</td>
+<td>Core-loop balance, item economy, board friction, feature use</td>
+</tr>
+<tr>
+<td>Economy</td>
+<td>Item acquisition/use, gold/gem/energy/XP balances, free versus purchased gems</td>
+<td>Sources/sinks, scarcity, economy health, monetization context</td>
+</tr>
+<tr>
+<td>Interface and discovery</td>
+<td>UI/window actions, store entry, settings click, offer/activity surfaces</td>
+<td>Navigation funnels, feature discovery, conversion surfaces</td>
+</tr>
+<tr>
+<td>Purchases</td>
+<td>Purchase start, SDK steps, query/verification stages, success/failure, product/order/amount/currency</td>
+<td>Revenue attribution, checkout diagnosis, offer performance, fraud/support investigation</td>
+</tr>
+<tr>
+<td>Advertising</td>
+<td>Load/show/result/end/reward, mediation network, revenue, currency, country</td>
+<td>Ad reliability, reward fulfillment, monetization yield, mediation analysis</td>
+</tr>
+<tr>
+<td>Acquisition</td>
+<td>AppsFlyer ID/CUID, media source, tracker, conversion/deep-link data, install event, BDA click ID</td>
+<td>Campaign attribution, deep-link routing, paid-user measurement</td>
+</tr>
+<tr>
+<td>Network and stability</td>
+<td>API phase/result, connection class, request diagnostics, client error/project events</td>
+<td>Incident diagnosis, endpoint reliability, build health</td>
+</tr>
+<tr>
+<td>Performance</td>
+<td>Startup stages, memory, FPS, frame hiccups, storage and device capability</td>
+<td>Device segmentation, startup optimization, performance regressions</td>
+</tr>
+<tr>
+<td>Privacy and settings</td>
+<td>Privacy acceptance, ATT request path, UMP status and ability to request ads</td>
+<td>Consent-state operations and ad eligibility</td>
+</tr>
+</tbody></table></div>
+<p>The catalog is large. A static parse identified 1,189 string-valued leaves in the primary <code>EBIType</code> catalog and 73 in <code>EBIProjectType</code>. Those are definitions, not proof that all events fire. Conversely, dynamic string-based calls and server-mapped destination events mean the catalogs are not necessarily a complete list of all possible external event names. (<code>.../core/Model/Network/BI/BIDefine.lua:1-1316</code>)</p>
+<h3 class="section-heading" id="4-high-level-data-flow-and-destinations">4. High-level data flow and destinations<a class="heading-anchor" href="#4-high-level-data-flow-and-destinations" aria-label="Link to 4. High-level data flow and destinations">#</a></h3>
+<p>There are several parallel flows.</p>
+<ol>
+<li><p><strong>First-party product BI:</strong> a gameplay or UI call invokes a typed <code>BIManager</code> wrapper; the wrapper constructs a record; <code>LogWithInfo</code> adds optional economy state; <code>_AppendBIInfo</code> adds common app/player/device context; <code>QueueMessage</code> adds the JSON event to a local dictionary; <code>FlushMessages</code> makes an envelope; <code>HttpManager</code> caches the full HTTP request; the request is sent to a OneSDK-provided BI URL and retried when necessary. Queue and database writes are committed on later save cycles.</p>
+</li>
+<li><p><strong>Operational marketing routing:</strong> <code>OperBIManager</code> emits named install/purchase events and uses a server response to map selected level or purchase IDs to AppsFlyer and Firebase event names. This is a separate route from the first-party BI upload, even when the same player action also generates a first-party event.</p>
+</li>
+<li><p><strong>Platform-standardized events:</strong> progression, resource, shop, purchase, and tutorial flows call platform bridge APIs such as <code>SDK_TrackEvent</code> or <code>Attr_TrackEvent</code>. The exported bridge reveals the interface but not every final vendor destination.</p>
+</li>
+<li><p><strong>Diagnostics:</strong> performance BI goes to the first-party/profiler path; selected context is also written as Crashlytics keys or breadcrumbs.</p>
+</li>
+<li><p><strong>Advertising measurement:</strong> ad state and reward outcomes create first-party BI records. The native ad facade additionally returns mediation-network and paid-event details, which Lua aggregates and logs.</p>
+</li>
+</ol>
+<p>As a result, one business action can generate multiple records. After purchase verification and fulfillment reach the final success block, the client creates first-party pay/pay-action events and may create server-mapped AppsFlyer/Firebase events. Non-mini-game code sends IAP proof traffic, calls AppsFlyer <code>client_purchase</code> and a hard-coded <code>abc</code> event, and logs <code>abc</code> to Firebase on global builds. Mini-game code instead records/confirms the order and sends a platform attribution purchase event. Reconciliation depends on shared user/order/product fields and backend conventions that are not visible. (<code>.../core/Model/InAppPurchase/InAppPurchaseModel.lua:394-429</code>; <code>.../core/Model/Network/Oper/OperBIManager.lua:11-18,73-95</code>)</p>
+<h3 class="section-heading" id="5-identity-attribution-and-consent-overview">5. Identity, attribution, and consent overview<a class="heading-anchor" href="#5-identity-attribution-and-consent-overview" aria-label="Link to 5. Identity, attribution, and consent overview">#</a></h3>
+<h4 class="subsection-heading" id="identity-layers">Identity layers<a class="heading-anchor" href="#identity-layers" aria-label="Link to Identity layers">#</a></h4>
+<p>The client uses several identifiers with different roles:</p>
+<ul>
+<li><strong>Game account identity:</strong> numeric user ID and authentication token when available.</li>
+<li><strong>Installation identity:</strong> an installation UUID and a locally incremented BI ID.</li>
+<li><strong>Vendor identity:</strong> AppsFlyer ID and CUID, Firebase user ID/instance ID, and regional click IDs.</li>
+<li><strong>Platform/device identity:</strong> IDFV/vendor ID, advertising ID, Android/device IDs, OAID/CAID in applicable paths, and some legacy hardware/network identifiers exposed by the bridge.</li>
+<li><strong>Transaction identity:</strong> product ID and order ID, plus receipt/signature values in payment-proof traffic.</li>
+</ul>
+<p>Most first-party BI events receive installation, build, time, network, country, and optional user identity. The detailed device-information block is requested by session events, network diagnostics, and <code>LogAction</code> calls whose action is <code>init</code>. Native privacy restrictions can cause some values to be unavailable even though the code asks for them. (<code>.../core/Model/Network/BI/BIManager.lua:224-239,538-566,627-707</code>)</p>
+<h4 class="subsection-heading" id="consent-timing">Consent timing<a class="heading-anchor" href="#consent-timing" aria-label="Link to Consent timing">#</a></h4>
+<ul>
+<li>On the fresh global dialog-acceptance path, Lua calls Firebase <code>SetConsent</code> and requests ATT. Remembered acceptance and the existing-user bypass skip the Lua <code>SetConsent</code> call; native persistence of consent is unknown. (<code>.../core/Model/GameModel.lua:375-422</code>)</li>
+<li>The non-global acceptance path starts BDA. The existing-user bypass also starts BDA without a visible region condition. (<code>.../core/Model/GameModel.lua:385-420</code>)</li>
+<li>Advertising has a separate UMP process. The ad manager initializes before UMP, the form is optionally requested when <code>AdPrivacyOpen</code> is enabled, and <code>CanRequestAds</code> is logged immediately after that request. Lua does not visibly use it to gate ad loading. (<code>.../core/Model/AdModel.lua:14-36,199-230</code>)</li>
+<li>On a fresh install, the first <code>session_start</code> reaches an HTTP <code>Send</code> call before the visible privacy-policy check. Firebase/Crashlytics setup calls also occur before that check. Static code does not establish actual network egress or native consent enforcement.</li>
+</ul>
+<h4 class="subsection-heading" id="attribution">Attribution<a class="heading-anchor" href="#attribution" aria-label="Link to Attribution">#</a></h4>
+<p>AppsFlyer is the only named mobile measurement partner whose identity and event APIs are both packaged and directly invoked. Its media source, tracker, conversion data, attribution data, deep-link data, and AppsFlyer ID are also copied into first-party or operational records. China-specific attribution uses BDA/CAID-style context through the platform bridge. The generic platform attribution path may fan out natively, but the exported client does not identify all destinations.</p>
+<h3 class="section-heading" id="6-key-findings-risks-and-unknowns">6. Key findings, risks, and unknowns<a class="heading-anchor" href="#6-key-findings-risks-and-unknowns" aria-label="Link to 6. Key findings, risks, and unknowns">#</a></h3>
+<h4 class="subsection-heading" id="high-confidence-findings">High-confidence findings<a class="heading-anchor" href="#high-confidence-findings" aria-label="Link to High-confidence findings">#</a></h4>
+<ul>
+<li>Analytics is deeply embedded in gameplay and operations, with hundreds of instrumented Lua files and a large event catalog.</li>
+<li>The first-party pipeline has an event queue and a cached-request retry table, both with later persistence cycles; it has a crash-loss window before a save completes.</li>
+<li>AppsFlyer is directly used; Firebase analytics/Crashlytics APIs are directly called; UMP is directly orchestrated for ad consent.</li>
+<li>The server can change selected AppsFlyer/Firebase event mappings and the BI compression mode without a client release.</li>
+<li>No Adjust SDK use is evidenced in Gossip Harbor 3.95.0.</li>
+<li>Client-side content deduplication and FIFO ordering are not guaranteed by the visible code.</li>
+<li>The level-up action sent to first-party BI uses a level one higher than the newly stored level passed to operational routing and, on global builds, Firebase.</li>
+</ul>
+<h4 class="subsection-heading" id="main-risks">Main risks<a class="heading-anchor" href="#main-risks" aria-label="Link to Main risks">#</a></h4>
+<ol>
+<li><strong>Consent-ordering risk:</strong> on a fresh install, first-party <code>session_start</code> invokes HTTP <code>Send</code> before the visible policy flow; Firebase/Crashlytics setup also occurs early. Native egress and consent gates need runtime verification.</li>
+<li><strong>Data-minimization risk:</strong> ordinary BI enrichment is broad, while selected diagnostic/login/payment paths can contain device, advertising, account, social, network, or transaction identifiers.</li>
+<li><strong>Delivery risk:</strong> the client can lose a queued event or cached request before a save, or resend a request after an ambiguous result. Backend idempotency and crash-window testing are essential.</li>
+<li><strong>Taxonomy-governance risk:</strong> a very large catalog, dynamic strings, and server-mapped destination names can drift without a central data contract.</li>
+<li><strong>Multi-destination reconciliation risk:</strong> the same action can reach first-party BI, AppsFlyer, Firebase, Crashlytics, and platform routes with different naming and fields. The level-up path has a concrete one-level value mismatch.</li>
+<li><strong>Static-analysis boundary:</strong> native SDK configuration, actual consent defaults, resolved endpoints, backend processing, and runtime event frequency are unavailable.</li>
+</ol>
+<h4 class="subsection-heading" id="highest-value-validation-questions">Highest-value validation questions<a class="heading-anchor" href="#highest-value-validation-questions" aria-label="Link to Highest-value validation questions">#</a></h4>
+<ul>
+<li>Does any first-party, AppsFlyer, Firebase, Crashlytics, BDA, or ad request leave the device before explicit consent in each region/build mode?</li>
+<li>Does the BI backend deduplicate using <code>msg_id</code>, and for how long?</li>
+<li>Which fields are retained downstream, for how long, and under which regional policies?</li>
+<li>Which packaged mediation adapters actually initialize and receive impression-level data?</li>
+<li>Are social access tokens/profile fields ever passed through <code>LogSDKLogin</code>, or is that wrapper dormant?</li>
+<li>Are dynamic event mappings versioned, reviewed, and documented with ownership?</li>
+</ul>
+<hr>
+<h2 class="part-heading" id="part-ii-technical-deep-dive">Part II — Technical Deep Dive<a class="heading-anchor" href="#part-ii-technical-deep-dive" aria-label="Link to Part II — Technical Deep Dive">#</a></h2>
+<h3 class="section-heading" id="7-initialization-and-analytics-lifecycle">7. Initialization and analytics lifecycle<a class="heading-anchor" href="#7-initialization-and-analytics-lifecycle" aria-label="Link to 7. Initialization and analytics lifecycle">#</a></h3>
+<p><code>GlobalManager</code> constructs <code>HttpManager</code>, <code>BIManager</code>, the operational manager, and <code>OperBIManager</code> as application-level singletons. During <code>Init</code>, the managers are initialized and a <code>session_start</code> event is logged. <code>BIManager.Init</code> obtains the BI URL from <code>NetworkConfig</code>, opens <code>dot_message.dat</code> through <code>SimpleStringDict</code>, restores the local BI sequence, and registers for background notifications. (<code>.../core/Model/GlobalManager.lua:15-129</code>; <code>.../core/Model/Network/BI/BIManager.lua:12-45</code>; <code>.../core/Model/Network/NetworkConfig.lua:62-66</code>)</p>
+<p>The main application <code>Awake</code> creates and initializes <code>GlobalManager</code>, then global-build code sets Crashlytics keys for version/mode and a Firebase <code>idfa</code> user property. The privacy-policy flow is invoked later from loading-layer progression. This produces the following observable Lua ordering:</p>
+<ol>
+<li>global managers are created and initialized;</li>
+<li>first-party <code>session_start</code> is queued and, on a fresh install with BI ID below 30, immediately reaches an HTTP <code>Send</code> call;</li>
+<li>Firebase/Crashlytics setup calls run on global builds;</li>
+<li>loading progresses;</li>
+<li>the visible privacy-policy decision is checked;</li>
+<li>fresh global dialog acceptance calls Firebase <code>SetConsent</code>; non-global acceptance starts BDA, while returning-user paths follow different branches.</li>
+</ol>
+<p>This ordering and the first-party send call are direct Lua evidence. Whether native code allows actual network egress before consent remains unknown. (<code>.../base/Main.lua:80-89</code>; <code>.../core/Model/Network/BI/BIManager.lua:32,55-96,558-566</code>; <code>.../core/UI/Layer/LoadingLayer.lua:177,455</code>; <code>.../core/UI/Layer/LoadingLayerNew.lua:302,655</code>; <code>.../core/Model/GameModel.lua:375-422</code>)</p>
+<p>On backgrounding, <code>GlobalManager</code> logs <code>session_end</code>, dispatches the background event, and the BI manager serializes its local state. On foregrounding it logs another <code>session_start</code>. Standard builds persist the BI ID and queue in <code>LateUpdate</code>; mini-game builds do so in a per-second update; destruction writes dirty data and closes the store. (<code>.../core/Model/GlobalManager.lua:309-338</code>; <code>.../core/Model/Network/BI/BIManager.lua:730-753</code>)</p>
+<h3 class="section-heading" id="8-first-party-bimanager-architecture">8. First-party <code>BIManager</code> architecture<a class="heading-anchor" href="#8-first-party-bimanager-architecture" aria-label="Link to 8. First-party BIManager architecture">#</a></h3>
+<h4 class="subsection-heading" id="8-1-layers">8.1 Layers<a class="heading-anchor" href="#8-1-layers" aria-label="Link to 8.1 Layers">#</a></h4>
+<p>The implementation can be divided into six client-side layers:</p>
+<ol>
+<li><strong>Catalog:</strong> <code>EBIType</code> and <code>EBIProjectType</code> define most known event names.</li>
+<li><strong>Domain wrappers:</strong> 35 <code>Log*</code> methods normalize the argument shape for actions, economy, merges, tasks, orders, purchases, ads, diagnostics, and other domains.</li>
+<li><strong>Common enrichment:</strong> <code>LogWithInfo</code> and <code>_AppendBIInfo</code> add snapshot and identity/context fields.</li>
+<li><strong>Event queue:</strong> each JSON event is added under a monotonically increasing pending key in a dictionary that is serialized to <code>dot_message.dat</code> later.</li>
+<li><strong>Envelope and dispatch:</strong> pending JSON fragments are joined into an HTTP request body and assigned a message ID.</li>
+<li><strong>Cached request delivery:</strong> <code>HttpManager</code> adds the complete request to a database table before sending, retries saved requests, and commits the table later.</li>
+</ol>
+<h4 class="subsection-heading" id="8-2-wrapper-inventory">8.2 Wrapper inventory<a class="heading-anchor" href="#8-2-wrapper-inventory" aria-label="Link to 8.2 Wrapper inventory">#</a></h4>
+<p>The visible wrappers include:</p>
+<div class="table-scroll" role="region" tabindex="0" aria-label="Report table; scroll horizontally if needed"><table>
+<thead>
+<tr>
+<th>Domain</th>
+<th>Representative <code>BIManager</code> methods</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Generic</td>
+<td><code>LogWithInfo</code>, <code>LogAction</code>, <code>LogString</code>, <code>LogUI</code></td>
+</tr>
+<tr>
+<td>Economy</td>
+<td><code>LogUseItem</code>, <code>LogAcquire</code>, <code>LogStore</code></td>
+</tr>
+<tr>
+<td>Board/core loop</td>
+<td><code>LogMerge</code>, <code>LogSplit</code>, <code>LogSpread</code></td>
+</tr>
+<tr>
+<td>Progression</td>
+<td><code>LogTask</code>, <code>LogPassActivityTask</code>, <code>LogOrder</code>, <code>LogTutorial</code>, <code>LogActivity</code></td>
+</tr>
+<tr>
+<td>Monetization</td>
+<td><code>LogPay</code>, <code>LogPayAction</code>, <code>LogAd</code></td>
+</tr>
+<tr>
+<td>Lifecycle and operations</td>
+<td><code>LogSession</code>, <code>LogSDKLogin</code>, <code>LogNet</code>, <code>LogErrorInfo</code>, <code>LogProject</code>, <code>LogPushToken</code></td>
+</tr>
+<tr>
+<td>Performance/device</td>
+<td>post-load, device/storage/network, profiler, and frame-hiccup methods</td>
+</tr>
+<tr>
+<td>Experimentation</td>
+<td><code>LogABTest</code> and configuration/context-oriented events</td>
+</tr>
+</tbody></table></div>
+<p>The wrappers do more than rename events. They create stable field conventions for each domain before delegating to the shared enrichment and queue. (<code>.../core/Model/Network/BI/BIManager.lua:157-626</code>)</p>
+<h4 class="subsection-heading" id="8-3-breadth-metrics">8.3 Breadth metrics<a class="heading-anchor" href="#8-3-breadth-metrics" aria-label="Link to 8.3 Breadth metrics">#</a></h4>
+<p>Reproducible, static source counts for <code>05_gameplay_logic/lua/readable/decompiled</code> are:</p>
+<ul>
+<li>1,067 lines containing any <code>GM.BIManager:&lt;method&gt;(</code> call, across 373 Lua files;</li>
+<li>1,023 lines containing <code>GM.BIManager:Log*(</code> calls, across 370 Lua files;</li>
+<li>32 distinct directly called <code>Log*</code> methods;</li>
+<li>52 <code>BIManager</code> method declarations, 35 beginning with <code>Log</code>;</li>
+<li>1,189 string-valued leaves in <code>EBIType</code> and 73 in <code>EBIProjectType</code> under the parser used for this review.</li>
+</ul>
+<p>These figures are instrumentation inventory, not production traffic counts. Conditions, feature flags, region, player state, and event loops determine actual emission.</p>
+<h3 class="section-heading" id="9-event-schema-and-automatic-enrichment">9. Event schema and automatic enrichment<a class="heading-anchor" href="#9-event-schema-and-automatic-enrichment" aria-label="Link to 9. Event schema and automatic enrichment">#</a></h3>
+<h4 class="subsection-heading" id="9-1-event-specific-fields">9.1 Event-specific fields<a class="heading-anchor" href="#9-1-event-specific-fields" aria-label="Link to 9.1 Event-specific fields">#</a></h4>
+<p>Each wrapper creates a domain record. Examples include item ID/amount/reason for resource flows; source and target item state for merges; order state, slot, difficulty and rewards for orders; product/order/scene for the first-party <code>LogPay</code> event; and ad placement, result, and an <code>ext</code> string for <code>LogAd</code>. Price and currency travel through separate purchase/attribution paths. An ad-earned callback JSON-encodes revenue, currency, network, and country into <code>LogAd.ext</code>. (<code>.../core/Model/Network/BI/BIManager.lua:211-269,298-307,355-370,609-618</code>; <code>.../core/Model/AdModel.lua:407-425</code>)</p>
+<h4 class="subsection-heading" id="9-2-default-gameplay-snapshot">9.2 Default gameplay snapshot<a class="heading-anchor" href="#9-2-default-gameplay-snapshot" aria-label="Link to 9.2 Default gameplay snapshot">#</a></h4>
+<p>Unless a caller disables it, <code>LogWithInfo</code> adds a snapshot of:</p>
+<ul>
+<li>player level;</li>
+<li>gold;</li>
+<li>gems;</li>
+<li>experience;</li>
+<li>energy;</li>
+<li>free gems;</li>
+<li>purchased gems.</li>
+</ul>
+<p>This makes most events independently segmentable by current economy state, but it also increases payload volume and the privacy/governance surface. (<code>.../core/Model/Network/BI/BIManager.lua:157-199</code>)</p>
+<h4 class="subsection-heading" id="9-3-common-context">9.3 Common context<a class="heading-anchor" href="#9-3-common-context" aria-label="Link to 9.3 Common context">#</a></h4>
+<p><code>_AppendBIInfo</code> adds or can add:</p>
+<div class="table-scroll" role="region" tabindex="0" aria-label="Report table; scroll horizontally if needed"><table>
+<thead>
+<tr>
+<th>Field group</th>
+<th>Visible values</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Build/routing</td>
+<td>app version, channel ID, environment</td>
+</tr>
+<tr>
+<td>Time</td>
+<td>client time and server-adjusted time</td>
+</tr>
+<tr>
+<td>Network/platform</td>
+<td>network class and OS name</td>
+</tr>
+<tr>
+<td>Installation/event identity</td>
+<td>install UUID, sequential BI ID, random value</td>
+</tr>
+<tr>
+<td>Player/geography</td>
+<td>country and nonzero user ID</td>
+</tr>
+<tr>
+<td>Optional device block</td>
+<td>OS version, model, language, MCC/MNC, IDFV, advertising ID, IMEI, device ID, MAC</td>
+</tr>
+</tbody></table></div>
+<p>The optional device block is requested by session events, network diagnostics, and <code>LogAction(..., &quot;init&quot;)</code>, rather than every event. Several identifiers are subject to OS and consent restrictions, so a requested field may still be empty. (<code>.../core/Model/Network/BI/BIManager.lua:224-239,538-566,627-707</code>)</p>
+<h4 class="subsection-heading" id="9-4-envelope">9.4 Envelope<a class="heading-anchor" href="#9-4-envelope" aria-label="Link to 9.4 Envelope">#</a></h4>
+<p>The queued JSON records are joined into an envelope shaped as follows. Example values are illustrative:</p>
+<pre><code class="language-json">{
+  &quot;data&quot;: [{&quot;event&quot;: &quot;session_start&quot;, &quot;bi_id&quot;: 1}],
+  &quot;msg_id&quot;: 123,
+  &quot;c_time&quot;: 1234567890,
+  &quot;token&quot;: &quot;&lt;game-token&gt;&quot;
+}
+</code></pre>
+<p>The builder joins stored event JSON objects into <code>data</code>; it inserts numeric <code>msg_id</code> and <code>c_time</code> values without quotes. The request uses HTTP POST, an 8-second timeout, client/retry-client headers, and <code>application/octet-stream</code>. If the body exceeds 1,024 bytes and the operational service has supplied a nonempty compression method, the native compression hook is used. The compression algorithm is not visible. (<code>.../core/Model/Network/BI/BIManager.lua:71-142</code>; <code>.../core/Model/Network/Oper/OperManager.lua:84-100</code>)</p>
+<h3 class="section-heading" id="10-event-taxonomy-and-domain-coverage">10. Event taxonomy and domain coverage<a class="heading-anchor" href="#10-event-taxonomy-and-domain-coverage" aria-label="Link to 10. Event taxonomy and domain coverage">#</a></h3>
+<h4 class="subsection-heading" id="10-1-catalog-behavior">10.1 Catalog behavior<a class="heading-anchor" href="#10-1-catalog-behavior" aria-label="Link to 10.1 Catalog behavior">#</a></h4>
+<p><code>BIDefine.lua</code> contains the primary and project/diagnostic catalogs. During initialization, test-mode code checks for duplicate top-level string codes. If a requested key is missing, the system emits a project diagnostic once for that missing key and raises a test-mode error. This is a lightweight guard against silent taxonomy mistakes, but it is not a complete schema validator: it does not visibly enforce payload field names, types, requiredness, or destination parity. (<code>.../core/Model/Network/BI/BIDefine.lua:1-1316</code>; <code>.../core/Model/Network/BI/BIManager.lua:34-44</code>)</p>
+<h4 class="subsection-heading" id="10-2-coverage-by-business-domain">10.2 Coverage by business domain<a class="heading-anchor" href="#10-2-coverage-by-business-domain" aria-label="Link to 10.2 Coverage by business domain">#</a></h4>
+<p>The catalog and call sites cover:</p>
+<ul>
+<li>account, login, lifecycle, privacy, and notifications;</li>
+<li>tutorial, level, task, order, pass, activity, and mini-game progression;</li>
+<li>board item creation, acquisition, use, merge, split, spread, generators, obstacles, and rewards;</li>
+<li>currency, energy, gems, gold, inventory, chests, and stores;</li>
+<li>windows, buttons, offers, promotions, settings, and navigation;</li>
+<li>purchase initialization, SDK stages, order query, receipt verification, success/failure, and first purchase;</li>
+<li>rewarded ads, own-ad fallback, mediation network, reward, and paid-event revenue;</li>
+<li>API timing/result, client errors, resource loading, device/storage/network state, startup, FPS, and frame hiccups;</li>
+<li>attribution, conversion, deep links, campaigns, and server-controlled marketing mappings.</li>
+</ul>
+<h4 class="subsection-heading" id="10-3-what-the-taxonomy-does-not-prove">10.3 What the taxonomy does not prove<a class="heading-anchor" href="#10-3-what-the-taxonomy-does-not-prove" aria-label="Link to 10.3 What the taxonomy does not prove">#</a></h4>
+<ul>
+<li>A definition does not prove a call site.</li>
+<li>A call site does not prove its branch executes.</li>
+<li>Execution does not prove successful upload.</li>
+<li>Upload does not prove backend acceptance or downstream use.</li>
+<li>Similar names across first-party BI, AppsFlyer, Firebase, and platform routes do not prove identical semantics.</li>
+</ul>
+<p>Those distinctions are why this report separates catalog, runtime call, bridge capability, package inventory, and backend unknowns.</p>
+<h3 class="section-heading" id="11-third-party-and-platform-integrations">11. Third-party and platform integrations<a class="heading-anchor" href="#11-third-party-and-platform-integrations" aria-label="Link to 11. Third-party and platform integrations">#</a></h3>
+<h4 class="subsection-heading" id="11-1-onesdk-as-the-integration-boundary">11.1 OneSDK as the integration boundary<a class="heading-anchor" href="#11-1-onesdk-as-the-integration-boundary" aria-label="Link to 11.1 OneSDK as the integration boundary">#</a></h4>
+<p>Lua aliases multiple <code>CS.OneSDK.*</code> singletons, including platform, Firebase, Facebook, AppsFlyer, ads, install referrer, and related utilities. <code>SDKManager</code> exposes queues and callbacks for login, advertising, purchasing, install-referrer, and deep-link work. This makes OneSDK the native integration boundary rather than an analytics destination by itself. (<code>.../base/Common/Utility/CSInclude.lua:54-92</code>; <code>02_exported_core/ExportedProject/Assets/Scripts/Assembly-CSharp/OneSDK/SDKManager.cs:8-289</code>)</p>
+<p>Because the C# was exported from IL2CPP, many method bodies are empty stubs. A stub proves that a callable interface exists in the build; a Lua invocation is stronger evidence that the game orchestrates it at runtime.</p>
+<h4 class="subsection-heading" id="11-2-appsflyer">11.2 AppsFlyer<a class="heading-anchor" href="#11-2-appsflyer" aria-label="Link to 11.2 AppsFlyer">#</a></h4>
+<p>AppsFlyer use is directly confirmed across identity, attribution, and events:</p>
+<ul>
+<li>user synchronization sets the game user ID as the AppsFlyer CUID;</li>
+<li>operational login/context reads the AppsFlyer ID, media source, and tracker name;</li>
+<li>conversion, attribution, and deep-link payloads are forwarded into first-party BI after a delay;</li>
+<li>first install sends <code>mf_install</code> with user and server-time context;</li>
+<li>after the purchase reaches its final success block, non-mini-game builds send <code>client_purchase</code> with user ID, price, currency, and order ID, plus a hard-coded AppsFlyer <code>abc</code> event;</li>
+<li>generic, level, and IAP events can be mapped to AppsFlyer event names supplied by the operational service;</li>
+<li>the bridge exposes event, IAP, conversion, attribution, deep-link, ID, CUID, and invite-link functions.</li>
+</ul>
+<p>Primary evidence: <code>.../core/Model/UserData/UserModel.lua:96-108</code>; <code>.../core/Model/Network/Oper/OperManager.lua:33-43,111-145</code>; <code>.../core/Model/Network/Oper/OperBIManager.lua:8-95</code>; <code>.../core/Model/InAppPurchase/InAppPurchaseModel.lua:411-429</code>; <code>02_exported_core/.../OneSDK/AppsFlyerManager.cs:7-105</code>.</p>
+<p>The acquisition snapshot also becomes part of first-party observability: the client can log conversion/attribution/deep-link data through the BI session path. This improves campaign debugging, but it means acquisition payloads may exist in both the MMP and first-party systems.</p>
+<h4 class="subsection-heading" id="11-3-firebase-analytics">11.3 Firebase Analytics<a class="heading-anchor" href="#11-3-firebase-analytics" aria-label="Link to 11.3 Firebase Analytics">#</a></h4>
+<p>The Firebase-facing manager exposes instance ID, user ID, user property, consent, level-up, ad-earned, and generic event APIs. Readable Lua directly:</p>
+<ul>
+<li>sets an <code>idfa</code> user property during global startup;</li>
+<li>synchronizes the game user ID to Firebase;</li>
+<li>logs level-up on global builds;</li>
+<li>logs server-mapped event names from <code>OperBIManager</code> with an empty parameter-string argument.</li>
+</ul>
+<p>On a global, non-mini-game purchase path that reaches the final success block, <code>TrackClientPurchase</code> also asks Firebase to log the hard-coded <code>abc</code> event. (<code>.../core/Model/Network/Oper/OperBIManager.lua:11-18,86-95</code>)</p>
+<p>No readable Lua call to <code>LogAdEarnedEvent</code> was found in the reviewed paths, so it is a bridge capability rather than confirmed use. Ad revenue is definitely logged to first-party BI through <code>AdModel</code>. (<code>.../base/Main.lua:80-89</code>; <code>.../core/Model/UserData/UserModel.lua:101-108</code>; <code>.../core/Model/UserData/LevelModel.lua:72-85</code>; <code>.../core/Model/Network/Oper/OperBIManager.lua:86-95</code>; <code>02_exported_core/.../OneSDK/FirebaseManager.cs:3-45</code>)</p>
+<h4 class="subsection-heading" id="11-4-firebase-crashlytics-facing-diagnostics">11.4 Firebase Crashlytics-facing diagnostics<a class="heading-anchor" href="#11-4-firebase-crashlytics-facing-diagnostics" aria-label="Link to 11.4 Firebase Crashlytics-facing diagnostics">#</a></h4>
+<p>Global startup writes version and mode keys. Payment actions, resource-load names, ad outcomes, and some SSO state are written as Crashlytics logs/breadcrumbs. This provides context around a later crash or nonfatal diagnostic, but the extracted Lua does not show native collection settings, upload rules, retention, or whether all logs are attached to an actual report. (<code>.../base/Main.lua:80-89</code>; <code>.../core/Model/Network/BI/BIManager.lua:240-268</code>; <code>.../core/Model/Resource/ResourceLoader.lua:246</code>; <code>.../core/Model/AdModel.lua:245-300,340-405</code>; <code>.../core/Model/Network/Sso/SsoManager.lua:10-32</code>)</p>
+<h4 class="subsection-heading" id="11-5-platform-event-and-attribution-routes">11.5 Platform event and attribution routes<a class="heading-anchor" href="#11-5-platform-event-and-attribution-routes" aria-label="Link to 11.5 Platform event and attribution routes">#</a></h4>
+<p>Two platform-facing calls are prominent:</p>
+<ul>
+<li><code>SDK_TrackEvent</code> is used for standardized product events such as virtual-resource transactions, property use, depleted energy, tutorials, level starts/completions, and shop entry.</li>
+<li><code>Attr_TrackEvent</code> is used for purchases and selected tutorial, level, shop, mini-game, and shortcut flows.</li>
+</ul>
+<p>The bridge also exposes BDA start/click-ID functions. China operational-login context includes BDA click ID and CAID-like values, and BDA sending starts after the privacy flow. (<code>.../core/Model/Network/Oper/OperManager.lua:111-145</code>; <code>.../core/Model/GameModel.lua:395-420</code>; <code>.../core/Model/Tutorial/TutorialModel.lua:188-203</code>; <code>.../core/UI/Window/Shop/ShopWindow.lua:56-62</code>; <code>02_exported_core/.../OneSDK/PlatformInterface.cs:30-118,186-268</code>)</p>
+<p>The exported <code>PlatformInterface</code> cannot reveal which native vendor ultimately receives every generic event. The safe conclusion is that a platform attribution abstraction is active, not that every call belongs to a particular named SDK.</p>
+<h4 class="subsection-heading" id="11-6-google-ump-and-advertising">11.6 Google UMP and advertising<a class="heading-anchor" href="#11-6-google-ump-and-advertising" aria-label="Link to 11.6 Google UMP and advertising">#</a></h4>
+<p>Advertising initialization is deferred until the main scene. After a further delay, Lua calls the ad manager&#39;s <code>Init()</code> before <code>InitUMPManager()</code>. Four seconds after UMP initialization, it requests the consent form only when the remotely supplied <code>AdPrivacyOpen</code> flag is enabled, then immediately logs <code>CanRequestAds()</code>; that log is not demonstrably the player&#39;s final form response. <code>LoadRewardedAd()</code> forwards directly to the native ad manager with no visible Lua <code>CanRequestAds</code> gate. Any collection or loading gate inside the native bridge remains unknown. Settings exposes a privacy-options entry when purpose-one consent is absent. (<code>.../core/Model/AdModel.lua:14-36,199-230</code>; <code>.../core/UI/Window/Setting/PrivacySettingWindow.lua:1-17,88-92</code>)</p>
+<p>Rewarded-ad orchestration records load/show/result/reward state. The native bridge returns loaded mediation network and paid-event properties—revenue, currency, network, and country. Lua accumulates daily revenue locally and JSON-encodes the individual paid-event properties into the first-party <code>LogAd.ext</code> string; the daily total is not included in that call. (<code>.../core/Model/AdModel.lua:245-300,340-426</code>; <code>.../core/Model/Network/BI/BIManager.lua:609-618</code>; <code>02_exported_core/.../OneSDK/AdManager.cs:68-204</code>; <code>02_exported_core/.../OneSDK/AdClientBridgeAndroid.cs:16-105</code>)</p>
+<p>AppLovin MAX assemblies/settings and multiple mediation-branded resources are packaged. The package inventory includes AppLovin plus resources associated with networks/adapters such as ByteDance/Pangle, Google, Mintegral, Moloco, Unity Ads, and Vungle/Liftoff. This is evidence of mediation capability only. The readable Lua talks to the generic OneSDK ad bridge and does not prove that every named adapter initializes or serves traffic. (<code>00_metadata/apk_inventory.csv:87-94,514-557,796-805</code>)</p>
+<h4 class="subsection-heading" id="11-7-facebook-and-social-data">11.7 Facebook and social data<a class="heading-anchor" href="#11-7-facebook-and-social-data" aria-label="Link to 11.7 Facebook and social data">#</a></h4>
+<p>The Facebook manager is used for account/social flows: login, permission-gated friend/invite features, and server submission of relevant authorization data. It should not be relabeled as a Facebook Analytics integration. The client has social fields and APIs, but the product-analytics destination is not Facebook Analytics in the evidence reviewed. (<code>.../core/Model/AccountManager.lua:84-93</code>; <code>.../activity/Pairwork/View/PairworkInviteWindow.lua:56-79</code>; <code>.../activity/Pairwork/Model/PairworkModel.lua:334-350,897-912</code>; <code>02_exported_core/.../OneSDK/FacebookManager.cs:7-113</code>)</p>
+<h4 class="subsection-heading" id="11-8-why-adjust-does-not-mean-adjust-sdk">11.8 Why <code>adjust</code> does not mean Adjust SDK<a class="heading-anchor" href="#11-8-why-adjust-does-not-mean-adjust-sdk" aria-label="Link to 11.8 Why adjust does not mean Adjust SDK">#</a></h4>
+<p>Two legacy labels are easy to misread:</p>
+<ul>
+<li><code>adjust_id</code> is populated by <code>CSAppsFlyerManager:GetAppsFlyerId()</code> in the login request.</li>
+<li><code>tbData.adjust</code> is decoded into a mapping that names AppsFlyer (<code>appsflyer</code>) and Firebase (<code>fben</code>) destinations.</li>
+</ul>
+<p>A scoped case-insensitive search across package metadata, exported C#, and readable Lua found zero matches for Adjust&#39;s package name, assembly, namespace, configuration class, event class, or common API entry points. The supported conclusion is <strong>no Adjust SDK use evidenced in build 3.95.0</strong>. (<code>.../core/Model/Network/Sso/SsoMessage.lua:45-83</code>; <code>.../core/Model/Network/Oper/OperManager.lua:84-100</code>; <code>.../core/Model/Network/Oper/OperBIManager.lua:20-95</code>)</p>
+<h3 class="section-heading" id="12-queueing-persistence-batching-and-transport">12. Queueing, persistence, batching, and transport<a class="heading-anchor" href="#12-queueing-persistence-batching-and-transport" aria-label="Link to 12. Queueing, persistence, batching, and transport">#</a></h3>
+<h4 class="subsection-heading" id="12-1-pre-dispatch-event-queue">12.1 Pre-dispatch event queue<a class="heading-anchor" href="#12-1-pre-dispatch-event-queue" aria-label="Link to 12.1 Pre-dispatch event queue">#</a></h4>
+<p>The primary queue uses <code>SimpleStringDict</code> associated with <code>dot_message.dat</code>. Each enriched event is JSON-encoded and added under an incrementing pending key. The dictionary supports dirty tracking and later serialization; <code>QueueData</code> itself does not demonstrate an immediate disk write. (<code>.../core/Model/Network/BI/BIManager.lua:1-5,55-70,730-753</code>; <code>.../base/Common/Utility/SimpleStringDict.lua:4-25,56-91,105-113</code>)</p>
+<p>Flush is triggered when either:</p>
+<ul>
+<li>10 unscaled seconds have elapsed; or</li>
+<li>the pending count reaches 20.</li>
+</ul>
+<p>For the first locally assigned BI IDs below 30, the code forces an immediate flush. Twenty is therefore a trigger threshold, not a demonstrated hard cap on envelope size: more than 20 may be present when the queue is flushed. (<code>.../core/Model/Network/BI/BIManager.lua:46-61,695-698</code>)</p>
+<h4 class="subsection-heading" id="12-2-post-dispatch-saved-request">12.2 Post-dispatch saved request<a class="heading-anchor" href="#12-2-post-dispatch-saved-request" aria-label="Link to 12.2 Post-dispatch saved request">#</a></h4>
+<p>Before <code>Send</code>, the BI request is added to the <code>CachedRequests</code> table with:</p>
+<ul>
+<li>URL;</li>
+<li>HTTP method;</li>
+<li>headers;</li>
+<li>base64-encoded body;</li>
+<li>operation name.</li>
+</ul>
+<p>The event queue is cleared immediately after the <code>Send</code> call, not after server success. <code>SaveHttpRequest</code> updates the table cache but does not force a disk commit. <code>DBTableManager</code> flushes/commits later, leaving a crash-loss window between clearing the event queue and persisting the request. After persistence, a successful response removes the saved row; a non-success doubles its retry delay from the initial ten seconds. Saved requests are considered for resend only when the device is online and the game is outside loading and sync-upload states. (<code>.../core/Model/Network/BI/BIManager.lua:84-102</code>; <code>.../core/Model/Network/HttpManager.lua:17-59,85-168</code>; <code>.../core/Model/DB/DBTable.lua:192-235</code>; <code>.../core/Model/DB/DBTableManager.lua:43-64,84-100</code>)</p>
+<h4 class="subsection-heading" id="12-3-delivery-semantics">12.3 Delivery semantics<a class="heading-anchor" href="#12-3-delivery-semantics" aria-label="Link to 12.3 Delivery semantics">#</a></h4>
+<p>The visible design is a <strong>cached retry pipeline with periodic persistence</strong>, without an established at-least-once or exactly-once delivery guarantee:</p>
+<ul>
+<li>a request is added to the cached table before the send attempt, but the disk save occurs later;</li>
+<li>failures in a committed saved request remain eligible for retry;</li>
+<li>an ambiguous result may cause the same request to be retried;</li>
+<li>no visible client-side content deduplication occurs;</li>
+<li>the envelope has a message ID that a backend could use for idempotency, but the backend is unavailable;</li>
+<li>a crash before queue serialization or database commit, database failure, or app data deletion could cause loss.</li>
+</ul>
+<h4 class="subsection-heading" id="12-4-compression-and-endpoint-resolution">12.4 Compression and endpoint resolution<a class="heading-anchor" href="#12-4-compression-and-endpoint-resolution" aria-label="Link to 12.4 Compression and endpoint resolution">#</a></h4>
+<p>The BI endpoint comes from a native-facing <code>GetOneSDKBIUrl()</code> call and is cached by <code>NetworkConfig</code>. A response from the operational service can supply a compression method. Bodies above 1,024 bytes are compressed only when that method is nonempty. The concrete resolved endpoint, compression algorithm, server decoding, and regional routing are not available in the readable source. (<code>.../core/Model/Network/NetworkConfig.lua:62-66</code>; <code>.../core/Model/Network/BI/BIManager.lua:52-54,71-96</code>; <code>.../core/Model/Network/Oper/OperManager.lua:84-100</code>)</p>
+<h3 class="section-heading" id="13-failure-handling-fallback-ordering-and-deduplication">13. Failure handling, fallback, ordering, and deduplication<a class="heading-anchor" href="#13-failure-handling-fallback-ordering-and-deduplication" aria-label="Link to 13. Failure handling, fallback, ordering, and deduplication">#</a></h3>
+<h4 class="subsection-heading" id="13-1-retry-and-backoff">13.1 Retry and backoff<a class="heading-anchor" href="#13-1-retry-and-backoff" aria-label="Link to 13.1 Retry and backoff">#</a></h4>
+<p><code>HttpManager</code> scans saved requests on a ten-second cycle. Failed requests have their timeout doubled and their next-send time advanced. No reliable maximum backoff cap is visible. The replay loop increments a request count, but its apparent four-request check has an empty body and does not cap the number sent in a scan. A data-reset path can send and clear saved requests, which deserves runtime testing around account reset/logout. (<code>.../core/Model/Network/HttpManager.lua:1-60,107-182</code>; <code>.../core/Model/Sync/SyncModel.lua:745</code>)</p>
+<h4 class="subsection-heading" id="13-2-fallback-route">13.2 Fallback route<a class="heading-anchor" href="#13-2-fallback-route" aria-label="Link to 13.2 Fallback route">#</a></h4>
+<p>The initial BI request callback can attempt a fallback route on eligible error codes, except in mini-game builds. Test, global, and other builds select different fallback logic. Generic saved-request replays use <code>HttpManager</code>&#39;s callback and do not invoke <code>BIManager.TryFallbackRequest</code>. The report omits literal hosts/IPs because they are unnecessary to explain this routing. (<code>.../core/Model/Network/BI/BIManager.lua:84-114</code>; <code>.../core/Model/Network/HttpManager.lua:138-168,195-215</code>)</p>
+<h4 class="subsection-heading" id="13-3-ordering">13.3 Ordering<a class="heading-anchor" href="#13-3-ordering" aria-label="Link to 13.3 Ordering">#</a></h4>
+<p>Client events receive sequential <code>bi_id</code> values, which can help reconstruct order downstream. However:</p>
+<ul>
+<li>pending events are joined using Lua <code>pairs</code> rather than an explicit sorted traversal;</li>
+<li>saved HTTP requests are also scanned with <code>pairs</code>;</li>
+<li>retries can cause an older envelope to arrive after a newer one.</li>
+</ul>
+<p>Therefore, a strict FIFO delivery guarantee is not evidenced. Analysis should use server receipt time cautiously and prefer client event time plus BI sequence where appropriate.</p>
+<h4 class="subsection-heading" id="13-4-deduplication">13.4 Deduplication<a class="heading-anchor" href="#13-4-deduplication" aria-label="Link to 13.4 Deduplication">#</a></h4>
+<p>No client-side content hash or duplicate-event suppression was found. A retried saved request reuses its serialized body/message ID, which is suitable for backend idempotency, but the client does not show whether the server enforces it. Purchase systems have transaction/order identifiers for business-level reconciliation, while generic gameplay events rely primarily on event identity and timing.</p>
+<h4 class="subsection-heading" id="13-5-sampling-and-rate-limiting">13.5 Sampling and rate limiting<a class="heading-anchor" href="#13-5-sampling-and-rate-limiting" aria-label="Link to 13.5 Sampling and rate limiting">#</a></h4>
+<p>A scoped search of first-party BI, operational routing, and OneSDK-facing code found no explicit <code>sampleRate</code>, <code>samplingRate</code>, event-sampling, rate-limit, throttle, drop-event, or discard-event mechanism. This does not prove that no sampling occurs in native SDKs or backends. It means explicit client-side analytics sampling is not evidenced in the reviewed readable paths.</p>
+<h3 class="section-heading" id="14-remote-configuration-and-server-controlled-mappings">14. Remote configuration and server-controlled mappings<a class="heading-anchor" href="#14-remote-configuration-and-server-controlled-mappings" aria-label="Link to 14. Remote configuration and server-controlled mappings">#</a></h3>
+<p>The client is not the sole owner of analytics behavior.</p>
+<h4 class="subsection-heading" id="14-1-destination-event-mapping">14.1 Destination event mapping<a class="heading-anchor" href="#14-1-destination-event-mapping" aria-label="Link to 14.1 Destination event mapping">#</a></h4>
+<p>The operational response includes a JSON block stored under the legacy <code>adjust</code> key. <code>OperBIManager</code> indexes it by logical groups such as level-up and IAP, then emits the mapped AppsFlyer and Firebase event names. The server can therefore add or change selected external event names without an app release. (<code>.../core/Model/Network/Oper/OperManager.lua:84-100</code>; <code>.../core/Model/Network/Oper/OperBIManager.lua:20-95</code>)</p>
+<h4 class="subsection-heading" id="14-2-compression">14.2 Compression<a class="heading-anchor" href="#14-2-compression" aria-label="Link to 14.2 Compression">#</a></h4>
+<p>The same response can supply the BI compression method, changing wire behavior without changing the Lua implementation.</p>
+<h4 class="subsection-heading" id="14-3-consent-and-feature-configuration">14.3 Consent and feature configuration<a class="heading-anchor" href="#14-3-consent-and-feature-configuration" aria-label="Link to 14.3 Consent and feature configuration">#</a></h4>
+<p>Remote values control at least the ad privacy/UMP presentation path and various feature/social permissions. This makes server configuration part of the effective privacy and analytics design. A source review of the client cannot state which values were active for a given player/session.</p>
+<h4 class="subsection-heading" id="14-4-governance-implication">14.4 Governance implication<a class="heading-anchor" href="#14-4-governance-implication" aria-label="Link to 14.4 Governance implication">#</a></h4>
+<p>The effective analytics contract spans code and server configuration. Change control should cover:</p>
+<ul>
+<li>mapping version and effective date;</li>
+<li>owner and purpose for every AppsFlyer/Firebase event;</li>
+<li>parameter schema and allowed types;</li>
+<li>regional/consent eligibility;</li>
+<li>deletion or deprecation behavior;</li>
+<li>monitoring for mapping drift between external and first-party events.</li>
+</ul>
+<h3 class="section-heading" id="15-consent-timing-and-sensitive-data-review">15. Consent timing and sensitive-data review<a class="heading-anchor" href="#15-consent-timing-and-sensitive-data-review" aria-label="Link to 15. Consent timing and sensitive-data review">#</a></h3>
+<h4 class="subsection-heading" id="15-1-visible-privacy-flow">15.1 Visible privacy flow<a class="heading-anchor" href="#15-1-visible-privacy-flow" aria-label="Link to 15.1 Visible privacy flow">#</a></h4>
+<p><code>GameModel.CheckPrivacyPolicy</code> obtains cloud configuration and branches by build mode. In the non-global dialog path, acceptance persists a local privacy flag, starts the continuation callback, logs <code>PrivacyAgree</code> with a device ID, and starts BDA. Only the fresh global dialog-acceptance branch calls Firebase <code>SetConsent</code>. That branch calls <code>RequestATTPermission</code> directly and then calls a shared callback that invokes <code>RequestATTPermission</code> again; native prompt behavior is unknown. When acceptance is already stored, Lua skips <code>SetConsent</code> and invokes the shared ATT callback once. If a nonzero user ID bypasses the dialog, Lua marks the flag accepted, skips <code>SetConsent</code>, and calls <code>BDA_StartSendingEvents()</code> without a visible build/region condition. Native persistence of Firebase consent and BDA behavior are unknown. (<code>.../core/Model/GameModel.lua:375-422</code>)</p>
+<h4 class="subsection-heading" id="15-2-separate-ad-consent-flow">15.2 Separate ad-consent flow<a class="heading-anchor" href="#15-2-separate-ad-consent-flow" aria-label="Link to 15.2 Separate ad-consent flow">#</a></h4>
+<p>After the main scene, Lua initializes the ad manager before UMP; the UMP form may be requested later based on <code>AdPrivacyOpen</code>. Lua checks <code>CanRequestAds</code> for an immediate BI status log after asking to show the form, but does not visibly use it to gate <code>LoadRewardedAd</code>. Native enforcement is unavailable. The settings screen exposes privacy policy, user agreement, child/privacy/delete-account functions, ad settings, cross-promotion, and email/data-related controls, plus UMP privacy options in the relevant state. (<code>.../core/Model/AdModel.lua:14-36,199-230</code>; <code>.../core/UI/Window/Setting/PrivacySettingWindow.lua:1-99</code>)</p>
+<h4 class="subsection-heading" id="15-3-pre-policy-call-ordering">15.3 Pre-policy call ordering<a class="heading-anchor" href="#15-3-pre-policy-call-ordering" aria-label="Link to 15.3 Pre-policy call ordering">#</a></h4>
+<p>The following occur before the visible policy check in Lua startup:</p>
+<ul>
+<li>first-party manager initialization;</li>
+<li>first-party <code>session_start</code> with attribution and requested device context; on a fresh install, its BI ID is below 30 and the client immediately calls HTTP <code>Send</code>;</li>
+<li>global-build Crashlytics version/mode keys;</li>
+<li>global-build Firebase <code>idfa</code> user-property call.</li>
+</ul>
+<p>The first-party send attempt before the visible policy check is established by Lua call order; actual network egress and native SDK gating remain runtime questions. Test clean installs and returning users in each build/region, including under-age/age-gated state, ATT denied, UMP denied, and offline-to-online transitions. (<code>.../core/Model/GlobalManager.lua:119-129</code>; <code>.../core/Model/Network/BI/BIManager.lua:32,55-96,558-566</code>)</p>
+<h4 class="subsection-heading" id="15-4-sensitive-and-linkable-data-classes">15.4 Sensitive and linkable data classes<a class="heading-anchor" href="#15-4-sensitive-and-linkable-data-classes" aria-label="Link to 15.4 Sensitive and linkable data classes">#</a></h4>
+<div class="table-scroll" role="region" tabindex="0" aria-label="Report table; scroll horizontally if needed"><table>
+<thead>
+<tr>
+<th>Data class</th>
+<th>Examples visible in client paths</th>
+<th>Exposure context</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Account</td>
+<td>game user ID, authentication token, social ID</td>
+<td>common BI envelope or account/network flows</td>
+</tr>
+<tr>
+<td>Installation/vendor</td>
+<td>install UUID, BI ID, IDFV, AppsFlyer ID, Firebase ID</td>
+<td>common or vendor-specific context</td>
+</tr>
+<tr>
+<td>Advertising/device</td>
+<td>advertising ID, OAID/CAID-related values, IMEI, device ID, MAC, model, OS, MCC/MNC</td>
+<td>selected diagnostics, login/attribution, platform bridge</td>
+</tr>
+<tr>
+<td>Economy</td>
+<td>level, gold, gems, energy, XP, free/purchased gem split</td>
+<td>default BI snapshot on most events</td>
+</tr>
+<tr>
+<td>Transaction</td>
+<td>product ID, order ID, amount, currency, receipt, signature</td>
+<td>purchase BI, proof, and verification traffic</td>
+</tr>
+<tr>
+<td>Advertising monetization</td>
+<td>placement, mediation network, revenue, currency, country</td>
+<td>ad BI and revenue callback</td>
+</tr>
+<tr>
+<td>Social/profile</td>
+<td>social ID, name, email, photo, access/refresh token</td>
+<td>login/account messages; supported by an SDK-login BI wrapper</td>
+</tr>
+<tr>
+<td>Notifications</td>
+<td>push token</td>
+<td>active conditional BI event when token or user ID changes; raw token and user ID are also written to <code>Log.Info</code></td>
+</tr>
+<tr>
+<td>Diagnostics</td>
+<td>request/API names, result strings, resource names, stack/error text, device/storage/network capability</td>
+<td>project/error/network/profiler/Crashlytics paths</td>
+</tr>
+</tbody></table></div>
+<p><code>BIManager.LogSDKLogin</code> can accept raw result, access token, social ID, name, email, and picture values. No live Lua call site was found in the reviewed readable code, so this is a <strong>sensitive capability</strong>, not confirmed production emission. The SSO/account messages do directly serialize multiple social and device fields in relevant login flows. (<code>.../core/Model/Network/BI/BIManager.lua:567-580</code>; <code>.../core/Model/Network/Sso/SsoMessage.lua:45-107</code>)</p>
+<p>Push-token BI has a live conditional call site: <code>PushTokenModel.UpdatePushToken</code> invokes <code>LogPushToken</code> when the token or associated user ID changes. On Android, it polls for a nonempty token; a notification callback supplies the iOS path. The same update method logs the raw token and user ID locally. (<code>.../core/Model/Notification/PushTokenModel.lua:26-54</code>; <code>.../core/Model/Notification/NotificationModel.lua:231</code>)</p>
+<p>Payment proof sends a particularly linkable bundle: user and vendor IDs, advertising/Firebase identifiers, order/product values, amount/currency, receipt, and signature. This is operational payment traffic rather than all being BI event fields, but it belongs in the analytics/privacy data-flow review because it supports revenue validation and attribution. (<code>.../core/Model/Network/Pay/PayMessage.lua:5-51</code>)</p>
+<h4 class="subsection-heading" id="15-5-data-protection-questions-the-client-cannot-answer">15.5 Data-protection questions the client cannot answer<a class="heading-anchor" href="#15-5-data-protection-questions-the-client-cannot-answer" aria-label="Link to 15.5 Data-protection questions the client cannot answer">#</a></h4>
+<ul>
+<li>Which values are hashed, tokenized, truncated, or filtered in native implementations?</li>
+<li>Which fields are stored by each backend and third party?</li>
+<li>What are retention periods and deletion propagation rules?</li>
+<li>Which legal basis and consent state applies to each destination by region?</li>
+<li>Does account deletion remove first-party BI, MMP, Firebase, ad-network, and crash records?</li>
+<li>Are access tokens, receipts, signatures, URLs, or server responses redacted before logs are exported?</li>
+</ul>
+<h3 class="section-heading" id="16-debug-and-operational-controls">16. Debug and operational controls<a class="heading-anchor" href="#16-debug-and-operational-controls" aria-label="Link to 16. Debug and operational controls">#</a></h3>
+<p>The client includes several analytics-specific diagnostic controls:</p>
+<ul>
+<li>test mode validates duplicate top-level event codes;</li>
+<li>a PlayerPrefs switch enables readable BI logs;</li>
+<li>a test facility can replace <code>GM.BIManager</code> with a no-op proxy;</li>
+<li>empty scenes in <code>LogAction</code> create a test-mode error;</li>
+<li>missing BI keys generate a project event once and raise a test-mode error;</li>
+<li>ad code can open a mediation debugger;</li>
+<li>Crashlytics breadcrumbs record selected purchase, ad, SSO, and resource-loading state;</li>
+<li>performance paths report startup, device, memory, FPS, and frame hiccups.</li>
+</ul>
+<p>Sources: <code>.../core/Model/Network/BI/BIManager.lua:34-44,157-182,224-238,403-536</code>; <code>.../test/Test/TestModel.lua:1811-1830</code>; <code>.../test/Test/TestWindowV2/TestWindowButtonDefinition.lua:74-83</code>; <code>.../core/Model/AdModel.lua:581-582</code>.</p>
+<p>These controls help developers observe emission, but the visible code does not provide a production-facing event inspector, consent-aware payload preview, schema registry validation, or explicit queue-health dashboard.</p>
+<h3 class="section-heading" id="17-representative-end-to-end-event-traces">17. Representative end-to-end event traces<a class="heading-anchor" href="#17-representative-end-to-end-event-traces" aria-label="Link to 17. Representative end-to-end event traces">#</a></h3>
+<p>Each first-party trace below ends with the same terminal pipeline:</p>
+<p><code>domain call → Log* wrapper → LogWithInfo/_AppendBIInfo → QueueMessage → FlushMessages → SaveHttpRequest → send/retry</code></p>
+<h4 class="subsection-heading" id="17-1-cold-start-session">17.1 Cold-start session<a class="heading-anchor" href="#17-1-cold-start-session" aria-label="Link to 17.1 Cold-start session">#</a></h4>
+<ol>
+<li><code>GlobalManager.Init</code> initializes <code>HttpManager</code> and <code>BIManager</code>.</li>
+<li><code>LogSession(session_start)</code> is invoked.</li>
+<li>Common build/time/network/install context and the requested device-information block are appended.</li>
+<li>The event is added to the <code>dot_message.dat</code> dictionary.</li>
+<li>On a fresh install, the BI ID is below 30, forcing an immediate flush and HTTP <code>Send</code> call before the visible privacy check.</li>
+<li>The complete request is added to <code>CachedRequests</code> before <code>Send</code>; both local stores require later persistence, so an early crash can still lose it.</li>
+</ol>
+<p>Evidence: <code>.../core/Model/GlobalManager.lua:119-130</code>; <code>.../core/Model/Network/BI/BIManager.lua:12-142,558-566</code>; <code>.../core/Model/Network/HttpManager.lua:85-105</code>; <code>.../core/Model/DB/DBTableManager.lua:43-64,84-100</code>.</p>
+<h4 class="subsection-heading" id="17-2-background-and-resume">17.2 Background and resume<a class="heading-anchor" href="#17-2-background-and-resume" aria-label="Link to 17.2 Background and resume">#</a></h4>
+<ol>
+<li>The background callback logs <code>session_end</code>.</li>
+<li>Managers receive the background event and BI state is serialized.</li>
+<li>Returning to foreground logs a new <code>session_start</code>.</li>
+</ol>
+<p>Evidence: <code>.../core/Model/GlobalManager.lua:309-338</code>; <code>.../core/Model/Network/BI/BIManager.lua:730-753</code>.</p>
+<h4 class="subsection-heading" id="17-3-board-merge">17.3 Board merge<a class="heading-anchor" href="#17-3-board-merge" aria-label="Link to 17.3 Board merge">#</a></h4>
+<ol>
+<li>Board logic completes a merge.</li>
+<li>It calls <code>LogMerge</code> with the source/target/result context.</li>
+<li><code>LogMerge</code> normalizes the merge record and uses the standard enrichment/queue pipeline.</li>
+</ol>
+<p>Evidence: <code>.../core/Board/Model/UIBoard/BaseUIBoardModel.lua:197-201</code>; <code>.../core/Model/Network/BI/BIManager.lua:298-307</code>.</p>
+<h4 class="subsection-heading" id="17-4-resource-acquisition">17.4 Resource acquisition<a class="heading-anchor" href="#17-4-resource-acquisition" aria-label="Link to 17.4 Resource acquisition">#</a></h4>
+<ol>
+<li>An obstacle/custom-item reward is granted.</li>
+<li>The model calls <code>LogAcquire</code> with item, quantity, and reason context.</li>
+<li>The BI manager adds the current economy snapshot, allowing before/after resource analysis downstream when events are modeled correctly.</li>
+</ol>
+<p>Evidence: <code>.../core/Board/Model/UIBoard/BaseUIBoardObstacleLayerModel.lua:121-132</code>; <code>.../core/Model/Network/BI/BIManager.lua:211-223</code>.</p>
+<h4 class="subsection-heading" id="17-5-order-progression-completion">17.5 Order progression/completion<a class="heading-anchor" href="#17-5-order-progression-completion" aria-label="Link to 17.5 Order progression/completion">#</a></h4>
+<ol>
+<li>Order model state changes or completion logic runs.</li>
+<li>The payload can include slot/state, difficulty, baseline/lucky state, reward and buff details, continuous/chest flags, dynamic limits, and a monthly payment-range band.</li>
+<li><code>LogOrder</code> normalizes and queues the record.</li>
+</ol>
+<p>Evidence: <code>.../core/Board/Model/Order/MainOrderModel.lua:1180-1265</code>; <code>.../core/Model/Network/BI/BIManager.lua:355-370</code>.</p>
+<h4 class="subsection-heading" id="17-6-level-up">17.6 Level-up<a class="heading-anchor" href="#17-6-level-up" aria-label="Link to 17.6 Level-up">#</a></h4>
+<ol>
+<li><code>LevelModel</code> applies the level increase.</li>
+<li>On global builds, Firebase&#39;s level-up API receives the newly stored current level.</li>
+<li><code>OperBIManager</code> receives that current level. In non-mini-game builds it may emit server-mapped AppsFlyer/Firebase named events when a matching mapping exists; other build paths use platform attribution.</li>
+<li>The first-party <code>LogAction(EBIType.LevelUp, ...)</code> receives the stored current level plus one as its <code>action</code>, while its default <code>info.lv</code> holds the stored current level. Any emitted Firebase/operational level value therefore differs from the first-party <code>action</code> value.</li>
+</ol>
+<p>Evidence: <code>.../core/Model/UserData/LevelModel.lua:72-85</code>; <code>.../core/Model/Network/BI/BIManager.lua:157-199,224-239</code>; <code>.../core/Model/Network/Oper/OperBIManager.lua:20-71</code>.</p>
+<h4 class="subsection-heading" id="17-7-tutorial-completion">17.7 Tutorial completion<a class="heading-anchor" href="#17-7-tutorial-completion" aria-label="Link to 17.7 Tutorial completion">#</a></h4>
+<ol>
+<li>Tutorial state reaches the relevant completion step.</li>
+<li>First-party tutorial BI is emitted.</li>
+<li>A standardized platform event is sent through the platform bridge.</li>
+</ol>
+<p>Evidence: <code>.../core/Model/Tutorial/TutorialModel.lua:188-203</code>; <code>.../core/Model/Network/BI/BIManager.lua:383-390</code>.</p>
+<h4 class="subsection-heading" id="17-8-verified-and-fulfilled-in-app-purchase">17.8 Verified and fulfilled in-app purchase<a class="heading-anchor" href="#17-8-verified-and-fulfilled-in-app-purchase" aria-label="Link to 17.8 Verified and fulfilled in-app purchase">#</a></h4>
+<ol>
+<li>Purchase start and SDK/query/verification stages log diagnostic pay-action events.</li>
+<li>Verification uses order, product, receipt, signature, price/currency, and identity context. <code>_OnVerifySuccess</code> returns early for an already-confirmed order, a failed restore reward, or a missing fulfillment callback.</li>
+<li>If fulfillment reaches the final success block, first-party <code>LogPay</code> and success <code>LogPayAction</code> run.</li>
+<li>In non-mini-game builds, the client sends IAP proof traffic and <code>TrackClientPurchase</code> sends AppsFlyer <code>client_purchase</code> plus a hard-coded <code>abc</code> event. On global builds, it also calls Firebase for <code>abc</code>.</li>
+<li>In mini-game builds, the client records/confirms the order instead of sending <code>PayMessage.IAP</code> proof, and <code>TrackClientPurchase</code> sends a platform attribution purchase event with price multiplied by 100.</li>
+<li>Server-controlled IAP mappings may create additional AppsFlyer/Firebase named events.</li>
+</ol>
+<p>Evidence: <code>.../core/Model/InAppPurchase/InAppPurchaseModel.lua:120-160,240-264,394-430</code>; <code>.../core/Model/Network/Pay/PayMessage.lua:5-51</code>; <code>.../core/Model/Network/BI/BIManager.lua:240-269</code>; <code>.../core/Model/Network/Oper/OperBIManager.lua:11-18,73-95</code>.</p>
+<h4 class="subsection-heading" id="17-9-rewarded-ad-and-paid-event-revenue">17.9 Rewarded ad and paid-event revenue<a class="heading-anchor" href="#17-9-rewarded-ad-and-paid-event-revenue" aria-label="Link to 17.9 Rewarded ad and paid-event revenue">#</a></h4>
+<ol>
+<li>A placement requests and shows rewarded video through the OneSDK ad facade.</li>
+<li>First-party BI records start/load/show/result/end and reward success/failure.</li>
+<li>Crashlytics breadcrumbs record selected outcomes.</li>
+<li>The paid-event callback returns revenue, currency, network, and country.</li>
+<li>Lua updates daily revenue totals locally and submits the individual paid-event properties as a JSON string in first-party <code>LogAd.ext</code>.</li>
+</ol>
+<p>Evidence: <code>.../core/Model/AdModel.lua:245-300,340-426</code>; <code>.../core/Model/Network/BI/BIManager.lua:609-618</code>.</p>
+<h4 class="subsection-heading" id="17-10-login-and-attribution-snapshot">17.10 Login and attribution snapshot<a class="heading-anchor" href="#17-10-login-and-attribution-snapshot" aria-label="Link to 17.10 Login and attribution snapshot">#</a></h4>
+<ol>
+<li>Login/session code obtains AppsFlyer conversion, attribution, deep-link, media-source, tracker, and ID values.</li>
+<li>Operational login sends selected acquisition/device context.</li>
+<li>First-party network/session BI records request/result or attribution snapshots with requested device information.</li>
+</ol>
+<p>Evidence: <code>.../core/Model/Network/Oper/OperManager.lua:33-43,111-145</code>; <code>.../core/Model/GameModel.lua:192-215</code>; <code>.../core/Model/Network/BI/BIManager.lua:538-566</code>.</p>
+<h3 class="section-heading" id="18-evidence-limitations-and-runtime-validation-plan">18. Evidence limitations and runtime validation plan<a class="heading-anchor" href="#18-evidence-limitations-and-runtime-validation-plan" aria-label="Link to 18. Evidence limitations and runtime validation plan">#</a></h3>
+<h4 class="subsection-heading" id="18-1-what-static-extraction-proves-well">18.1 What static extraction proves well<a class="heading-anchor" href="#18-1-what-static-extraction-proves-well" aria-label="Link to 18.1 What static extraction proves well">#</a></h4>
+<ul>
+<li>Lua initialization and call ordering;</li>
+<li>first-party event construction, enrichment, queue, envelope, persistence, and retry logic;</li>
+<li>direct Lua calls to SDK bridges;</li>
+<li>declared bridge capabilities;</li>
+<li>packaged assemblies/resources;</li>
+<li>static event/call-site inventory.</li>
+</ul>
+<h4 class="subsection-heading" id="18-2-what-it-cannot-prove">18.2 What it cannot prove<a class="heading-anchor" href="#18-2-what-it-cannot-prove" aria-label="Link to 18.2 What it cannot prove">#</a></h4>
+<ul>
+<li>actual per-session event frequency or coverage;</li>
+<li>resolved native endpoints and native request transformations;</li>
+<li>whether native SDKs suppress or upload data before consent;</li>
+<li>live remote-configuration values;</li>
+<li>successful network delivery and backend acceptance;</li>
+<li>backend schema, transformations, deduplication, joins, dashboards, retention, or deletion;</li>
+<li>which packaged mediation adapters initialize or receive data;</li>
+<li>production sampling outside the readable client;</li>
+<li>behavior changes in a different app version, platform, region, or experiment.</li>
+</ul>
+<h4 class="subsection-heading" id="18-3-recommended-runtime-test-matrix">18.3 Recommended runtime test matrix<a class="heading-anchor" href="#18-3-recommended-runtime-test-matrix" aria-label="Link to 18.3 Recommended runtime test matrix">#</a></h4>
+<p>Capture network traffic and SDK debug output for these cases, using test accounts and a controlled device lab:</p>
+<div class="table-scroll" role="region" tabindex="0" aria-label="Report table; scroll horizontally if needed"><table>
+<thead>
+<tr>
+<th>Scenario</th>
+<th>Critical assertions</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Fresh install, no consent action</td>
+<td>No prohibited first- or third-party upload; document buffered calls and destinations</td>
+</tr>
+<tr>
+<td>Consent accepted</td>
+<td>Expected SDK activation, correct consent flags, identifiers only where allowed</td>
+</tr>
+<tr>
+<td>Consent denied / ATT denied</td>
+<td>Advertising ID absent/restricted; nonessential destinations suppressed as policy requires</td>
+</tr>
+<tr>
+<td>UMP denied</td>
+<td><code>CanRequestAds</code> and ad behavior match configuration; no disallowed adapter traffic</td>
+</tr>
+<tr>
+<td>China build/path</td>
+<td>BDA starts only at intended point; CAID/click-ID use matches policy</td>
+</tr>
+<tr>
+<td>Offline play then reconnect</td>
+<td>Events survive restart; saved requests resend; ordering and duplicate rate measured</td>
+</tr>
+<tr>
+<td>Server accepts but response is dropped</td>
+<td>Same <code>msg_id</code> retried; backend creates no duplicate facts</td>
+</tr>
+<tr>
+<td>App killed before queue serialization and between <code>Send</code> and database commit</td>
+<td>Measure event/request loss in both save windows and recovery after restart</td>
+</tr>
+<tr>
+<td>Purchase success/failure/query recovery</td>
+<td>One revenue fact per order; destination parity and sensitive-log redaction</td>
+</tr>
+<tr>
+<td>Rewarded ad success/failure/fallback</td>
+<td>Reward is granted once; revenue/network fields match mediation callback</td>
+</tr>
+<tr>
+<td>Account deletion/logout/reset</td>
+<td>Queues, identifiers, local stores, and downstream deletion behavior are verified</td>
+</tr>
+</tbody></table></div>
+<h3 class="section-heading" id="19-prioritized-conclusions-and-recommendations">19. Prioritized conclusions and recommendations<a class="heading-anchor" href="#19-prioritized-conclusions-and-recommendations" aria-label="Link to 19. Prioritized conclusions and recommendations">#</a></h3>
+<h4 class="subsection-heading" id="priority-0-verify-consent-enforcement-and-backend-idempotency">Priority 0 — verify consent enforcement and backend idempotency<a class="heading-anchor" href="#priority-0-verify-consent-enforcement-and-backend-idempotency" aria-label="Link to Priority 0 — verify consent enforcement and backend idempotency">#</a></h4>
+<ol>
+<li>Instrument a clean-install network test for every regional build and consent outcome. Lua already calls first-party HTTP <code>Send</code> before the visible policy check; the test must determine whether that produces network egress and which identifiers it carries.</li>
+<li>Confirm that the first-party BI backend treats <code>msg_id</code> as an idempotency key. Test the accepted-request/lost-response case explicitly.</li>
+<li>Verify native consent enforcement for Firebase, BDA, and ads. In particular, check ad-manager initialization/loading before or during the UMP form and returning-user Firebase consent state.</li>
+</ol>
+<h4 class="subsection-heading" id="priority-1-create-one-governed-event-contract">Priority 1 — create one governed event contract<a class="heading-anchor" href="#priority-1-create-one-governed-event-contract" aria-label="Link to Priority 1 — create one governed event contract">#</a></h4>
+<ol start="4">
+<li>Maintain a registry covering first-party BI, AppsFlyer, Firebase, platform attribution, Crashlytics breadcrumbs, and ad-revenue events. For each event specify owner, purpose, trigger, fields, types, consent class, region, destinations, retention, and deprecation state.</li>
+<li>Version and audit server-controlled event mappings. Alert on unknown external event names, missing parameters, and mapping changes without an owner.</li>
+<li>Define cross-destination reconciliation keys for purchase, ad revenue, progression, and install events; do not rely only on event names or receipt time.</li>
+</ol>
+<h4 class="subsection-heading" id="priority-2-reduce-sensitive-data-and-diagnostic-exposure">Priority 2 — reduce sensitive-data and diagnostic exposure<a class="heading-anchor" href="#priority-2-reduce-sensitive-data-and-diagnostic-exposure" aria-label="Link to Priority 2 — reduce sensitive-data and diagnostic exposure">#</a></h4>
+<ol start="7">
+<li>Review the optional device-information block and retire identifiers that are no longer necessary or reliable on modern OS versions.</li>
+<li>Audit purchase, SSO, Crashlytics, and project/error logging for access tokens, receipts, signatures, full URLs, raw server responses, and personal profile data. Add structured redaction at the logging boundary.</li>
+<li>Remove or constrain dormant high-risk APIs such as the broad <code>LogSDKLogin</code> payload if there is no documented production need.</li>
+<li>Treat push tokens and acquisition payloads as personal/linkable data in retention and deletion workflows; review the local <code>Log.Info</code> call that prints the raw push token and user ID.</li>
+</ol>
+<h4 class="subsection-heading" id="priority-3-improve-correctness-and-operability">Priority 3 — improve correctness and operability<a class="heading-anchor" href="#priority-3-improve-correctness-and-operability" aria-label="Link to Priority 3 — improve correctness and operability">#</a></h4>
+<ol start="11">
+<li>Sort pending events by BI sequence before envelope creation, or formally document that downstream reconstruction must use sequence/time rather than arrival order.</li>
+<li>Add queue-health metrics: pending events, cached requests, oldest age, retry count, last successful disk save, serialization failures, and discarded/reset requests. Test a crash between <code>Send</code> and the database commit.</li>
+<li>Add schema validation for field names, types, required fields, and payload size—not only duplicate event-code checks.</li>
+<li>Document first-29-ID immediate flushing as an intentional onboarding policy, or replace it with an explicit named configuration.</li>
+<li>Record mapping/configuration version in every externally mapped event for reproducibility.</li>
+</ol>
+<hr>
+<h2 class="part-heading" id="appendices">Appendices<a class="heading-anchor" href="#appendices" aria-label="Link to Appendices">#</a></h2>
+<h3 class="section-heading" id="appendix-a-first-party-field-and-envelope-reference">Appendix A — First-party field and envelope reference<a class="heading-anchor" href="#appendix-a-first-party-field-and-envelope-reference" aria-label="Link to Appendix A — First-party field and envelope reference">#</a></h3>
+<div class="table-scroll" role="region" tabindex="0" aria-label="Report table; scroll horizontally if needed"><table>
+<thead>
+<tr>
+<th>Layer</th>
+<th>Examples</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Domain payload</td>
+<td>action/scene; item/amount/reason; merge <code>from</code>/<code>to</code>; order/reward/difficulty; first-party pay product/order/scene; ad scene/stage/<code>ext</code></td>
+<td>Price/currency use separate purchase routes; ad-earned revenue details are JSON-encoded inside <code>ext</code>.</td>
+</tr>
+<tr>
+<td>Default bag snapshot</td>
+<td>level, gold, gems, XP, energy, free gems, purchased gems</td>
+<td>Usually enabled by <code>LogWithInfo</code>; caller can disable.</td>
+</tr>
+<tr>
+<td>Common context</td>
+<td>app version, channel, environment, client/server time, network, OS, install UUID, BI ID, random value, country, user ID</td>
+<td>Added by <code>_AppendBIInfo</code>; user ID omitted when zero.</td>
+</tr>
+<tr>
+<td>Optional device context</td>
+<td>OS version, model, language, MCC/MNC, IDFV, advertising ID, IMEI, device ID, MAC</td>
+<td>Requested by session, network diagnostic, and <code>init</code> action paths; availability varies by platform/consent.</td>
+</tr>
+<tr>
+<td>Request envelope</td>
+<td><code>data</code> array of objects; numeric <code>msg_id</code> and <code>c_time</code>; string <code>token</code></td>
+<td>Complete request is cached before send and committed later.</td>
+</tr>
+<tr>
+<td>Transport metadata</td>
+<td>POST, 8-second timeout, client/retry-client headers, octet-stream content type</td>
+<td>Concrete endpoint comes from native configuration.</td>
+</tr>
+</tbody></table></div>
+<h3 class="section-heading" id="appendix-b-event-and-wrapper-catalog">Appendix B — Event and wrapper catalog<a class="heading-anchor" href="#appendix-b-event-and-wrapper-catalog" aria-label="Link to Appendix B — Event and wrapper catalog">#</a></h3>
+<div class="table-scroll" role="region" tabindex="0" aria-label="Report table; scroll horizontally if needed"><table>
+<thead>
+<tr>
+<th>Wrapper</th>
+<th>Main role</th>
+<th>Representative information</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>LogWithInfo</code></td>
+<td>shared event path</td>
+<td>default economy snapshot and common BI context</td>
+</tr>
+<tr>
+<td><code>LogUseItem</code></td>
+<td>economy sink</td>
+<td>item, quantity, reason/context</td>
+</tr>
+<tr>
+<td><code>LogAcquire</code></td>
+<td>economy source</td>
+<td>item, quantity, source/reason</td>
+</tr>
+<tr>
+<td><code>LogAction</code></td>
+<td>generic behavior</td>
+<td>action and scene/context</td>
+</tr>
+<tr>
+<td><code>LogPay</code></td>
+<td>first-party purchase fact</td>
+<td>product ID, order ID, scene, game mode; shared BI context</td>
+</tr>
+<tr>
+<td><code>LogPayAction</code></td>
+<td>checkout diagnostic</td>
+<td>staged purchase action/result; also Crashlytics breadcrumb</td>
+</tr>
+<tr>
+<td><code>LogSurvey</code></td>
+<td>survey response</td>
+<td>survey/action/value context</td>
+</tr>
+<tr>
+<td><code>LogUI</code></td>
+<td>interface behavior</td>
+<td>window/control/action context</td>
+</tr>
+<tr>
+<td><code>LogString</code></td>
+<td>generic string event</td>
+<td>event plus string payload</td>
+</tr>
+<tr>
+<td><code>LogMerge</code></td>
+<td>merge core loop</td>
+<td>source/target/result state</td>
+</tr>
+<tr>
+<td><code>LogSplit</code></td>
+<td>board split</td>
+<td>item/state context</td>
+</tr>
+<tr>
+<td><code>LogSpread</code></td>
+<td>board spread</td>
+<td>item/state context</td>
+</tr>
+<tr>
+<td><code>LogTask</code></td>
+<td>task progression</td>
+<td>task/state/progress context</td>
+</tr>
+<tr>
+<td><code>LogPassActivityTask</code></td>
+<td>pass progression</td>
+<td>task/activity progression</td>
+</tr>
+<tr>
+<td><code>LogOrder</code></td>
+<td>order system</td>
+<td>state, slot, difficulty, rewards, flags, bands</td>
+</tr>
+<tr>
+<td><code>LogStore</code></td>
+<td>store behavior</td>
+<td>store/product/action context</td>
+</tr>
+<tr>
+<td><code>LogTutorial</code></td>
+<td>onboarding</td>
+<td>tutorial step/state</td>
+</tr>
+<tr>
+<td><code>LogActivity</code></td>
+<td>live/activity systems</td>
+<td>activity/action/context</td>
+</tr>
+<tr>
+<td>profiler/device methods</td>
+<td>performance</td>
+<td>startup, device, memory, FPS, hiccups, storage/network</td>
+</tr>
+<tr>
+<td><code>LogNet</code></td>
+<td>API/network diagnosis</td>
+<td>operation/phase/result/device context</td>
+</tr>
+<tr>
+<td><code>LogSession</code></td>
+<td>lifecycle/acquisition</td>
+<td>session start/end, attribution snapshot, requested device context</td>
+</tr>
+<tr>
+<td><code>LogSDKLogin</code></td>
+<td>social-login diagnostic capability</td>
+<td>result/account/social fields; no live Lua call site found in reviewed code</td>
+</tr>
+<tr>
+<td><code>LogErrorInfo</code> / <code>LogProject</code></td>
+<td>diagnostics</td>
+<td>error traceback/project metadata</td>
+</tr>
+<tr>
+<td><code>LogPushToken</code></td>
+<td>notification identity</td>
+<td>conditional live BI emission when token or user ID changes</td>
+</tr>
+<tr>
+<td><code>LogAd</code></td>
+<td>advertising</td>
+<td>lifecycle/result/reward stage; ad-earned details encoded in <code>ext</code></td>
+</tr>
+<tr>
+<td><code>LogABTest</code></td>
+<td>experimentation</td>
+<td>experiment group/status context</td>
+</tr>
+</tbody></table></div>
+<p>The exact implementation is in <code>05_gameplay_logic/lua/readable/decompiled/core/Model/Network/BI/BIManager.lua:157-626</code>.</p>
+<h3 class="section-heading" id="appendix-c-source-index">Appendix C — Source index<a class="heading-anchor" href="#appendix-c-source-index" aria-label="Link to Appendix C — Source index">#</a></h3>
+<h4 class="subsection-heading" id="core-first-party-analytics">Core first-party analytics<a class="heading-anchor" href="#core-first-party-analytics" aria-label="Link to Core first-party analytics">#</a></h4>
+<ul>
+<li><code>05_gameplay_logic/lua/readable/decompiled/core/Model/Network/BI/BIManager.lua</code></li>
+<li><code>05_gameplay_logic/lua/readable/decompiled/core/Model/Network/BI/BIDefine.lua</code></li>
+<li><code>05_gameplay_logic/lua/readable/decompiled/core/Model/Network/HttpManager.lua</code></li>
+<li><code>05_gameplay_logic/lua/readable/decompiled/core/Model/Network/NetworkConfig.lua</code></li>
+<li><code>05_gameplay_logic/lua/readable/decompiled/base/Common/Utility/SimpleStringDict.lua</code></li>
+<li><code>05_gameplay_logic/lua/readable/decompiled/core/Model/GlobalManager.lua</code></li>
+<li><code>05_gameplay_logic/lua/readable/decompiled/core/Model/DB/DBTable.lua</code></li>
+<li><code>05_gameplay_logic/lua/readable/decompiled/core/Model/DB/DBTableManager.lua</code></li>
+<li><code>05_gameplay_logic/lua/readable/decompiled/core/Model/Sync/SyncModel.lua</code></li>
+<li><code>05_gameplay_logic/lua/readable/decompiled/core/Model/Resource/ResourceLoader.lua</code></li>
+</ul>
+<h4 class="subsection-heading" id="lifecycle-consent-and-identity">Lifecycle, consent, and identity<a class="heading-anchor" href="#lifecycle-consent-and-identity" aria-label="Link to Lifecycle, consent, and identity">#</a></h4>
+<ul>
+<li><code>05_gameplay_logic/lua/readable/decompiled/base/Main.lua</code></li>
+<li><code>05_gameplay_logic/lua/readable/decompiled/core/Model/GameModel.lua</code></li>
+<li><code>05_gameplay_logic/lua/readable/decompiled/core/Model/UserData/UserModel.lua</code></li>
+<li><code>05_gameplay_logic/lua/readable/decompiled/core/Model/Network/Sso/SsoMessage.lua</code></li>
+<li><code>05_gameplay_logic/lua/readable/decompiled/core/Model/Network/Sso/SsoManager.lua</code></li>
+<li><code>05_gameplay_logic/lua/readable/decompiled/core/Model/AccountManager.lua</code></li>
+<li><code>05_gameplay_logic/lua/readable/decompiled/core/Model/Notification/PushTokenModel.lua</code></li>
+<li><code>05_gameplay_logic/lua/readable/decompiled/core/Model/Notification/NotificationModel.lua</code></li>
+<li><code>05_gameplay_logic/lua/readable/decompiled/core/UI/Layer/LoadingLayer.lua</code></li>
+<li><code>05_gameplay_logic/lua/readable/decompiled/core/UI/Layer/LoadingLayerNew.lua</code></li>
+<li><code>05_gameplay_logic/lua/readable/decompiled/core/UI/Window/Setting/PrivacySettingWindow.lua</code></li>
+</ul>
+<h4 class="subsection-heading" id="operational-attribution-and-vendor-routing">Operational, attribution, and vendor routing<a class="heading-anchor" href="#operational-attribution-and-vendor-routing" aria-label="Link to Operational, attribution, and vendor routing">#</a></h4>
+<ul>
+<li><code>05_gameplay_logic/lua/readable/decompiled/core/Model/Network/Oper/OperManager.lua</code></li>
+<li><code>05_gameplay_logic/lua/readable/decompiled/core/Model/Network/Oper/OperBIManager.lua</code></li>
+<li><code>05_gameplay_logic/lua/readable/decompiled/base/Common/Utility/CSInclude.lua</code></li>
+<li><code>02_exported_core/ExportedProject/Assets/Scripts/Assembly-CSharp/OneSDK/SDKManager.cs</code></li>
+<li><code>02_exported_core/ExportedProject/Assets/Scripts/Assembly-CSharp/OneSDK/AppsFlyerManager.cs</code></li>
+<li><code>02_exported_core/ExportedProject/Assets/Scripts/Assembly-CSharp/OneSDK/FirebaseManager.cs</code></li>
+<li><code>02_exported_core/ExportedProject/Assets/Scripts/Assembly-CSharp/OneSDK/FirebaseManagerAndroid.cs</code></li>
+<li><code>02_exported_core/ExportedProject/Assets/Scripts/Assembly-CSharp/OneSDK/PlatformInterface.cs</code></li>
+<li><code>02_exported_core/ExportedProject/Assets/Scripts/Assembly-CSharp/OneSDK/AttrEventEnum.cs</code></li>
+<li><code>02_exported_core/ExportedProject/Assets/Scripts/Assembly-CSharp/OneSDK/FacebookManager.cs</code></li>
+</ul>
+<h4 class="subsection-heading" id="purchases-ads-and-representative-gameplay">Purchases, ads, and representative gameplay<a class="heading-anchor" href="#purchases-ads-and-representative-gameplay" aria-label="Link to Purchases, ads, and representative gameplay">#</a></h4>
+<ul>
+<li><code>05_gameplay_logic/lua/readable/decompiled/core/Model/InAppPurchase/InAppPurchaseModel.lua</code></li>
+<li><code>05_gameplay_logic/lua/readable/decompiled/core/Model/Network/Pay/PayMessage.lua</code></li>
+<li><code>05_gameplay_logic/lua/readable/decompiled/core/Model/AdModel.lua</code></li>
+<li><code>02_exported_core/ExportedProject/Assets/Scripts/Assembly-CSharp/OneSDK/AdManager.cs</code></li>
+<li><code>02_exported_core/ExportedProject/Assets/Scripts/Assembly-CSharp/OneSDK/AdClientBridgeAndroid.cs</code></li>
+<li><code>05_gameplay_logic/lua/readable/decompiled/core/Board/Model/UIBoard/BaseUIBoardModel.lua</code></li>
+<li><code>05_gameplay_logic/lua/readable/decompiled/core/Board/Model/UIBoard/BaseUIBoardObstacleLayerModel.lua</code></li>
+<li><code>05_gameplay_logic/lua/readable/decompiled/core/Board/Model/Order/MainOrderModel.lua</code></li>
+<li><code>05_gameplay_logic/lua/readable/decompiled/core/Model/UserData/LevelModel.lua</code></li>
+<li><code>05_gameplay_logic/lua/readable/decompiled/core/Model/Tutorial/TutorialModel.lua</code></li>
+<li><code>05_gameplay_logic/lua/readable/decompiled/core/UI/Window/Shop/ShopWindow.lua</code></li>
+<li><code>05_gameplay_logic/lua/readable/decompiled/activity/Pairwork/Model/PairworkModel.lua</code></li>
+<li><code>05_gameplay_logic/lua/readable/decompiled/activity/Pairwork/View/PairworkInviteWindow.lua</code></li>
+<li><code>05_gameplay_logic/lua/readable/decompiled/test/Test/TestModel.lua</code></li>
+<li><code>05_gameplay_logic/lua/readable/decompiled/test/Test/TestWindowV2/TestWindowButtonDefinition.lua</code></li>
+<li><code>00_metadata/apk_inventory.csv</code></li>
+</ul>
+<h3 class="section-heading" id="appendix-d-evidence-confidence-and-negative-search-register">Appendix D — Evidence-confidence and negative-search register<a class="heading-anchor" href="#appendix-d-evidence-confidence-and-negative-search-register" aria-label="Link to Appendix D — Evidence-confidence and negative-search register">#</a></h3>
+<div class="table-scroll" role="region" tabindex="0" aria-label="Report table; scroll horizontally if needed"><table>
+<thead>
+<tr>
+<th>Question</th>
+<th>Result</th>
+<th>Confidence and limitation</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Is first-party product BI directly implemented?</td>
+<td>Yes</td>
+<td><strong>High / Direct.</strong> Readable construction, enrichment, queues, batching, and send orchestration; disk persistence occurs later.</td>
+</tr>
+<tr>
+<td>Is AppsFlyer active?</td>
+<td>Yes</td>
+<td><strong>High / Direct + Bridge + Packaged.</strong> Multiple Lua call sites and packaged API.</td>
+</tr>
+<tr>
+<td>Is Firebase active?</td>
+<td>Yes</td>
+<td><strong>High / Direct + Bridge.</strong> Identity, property, consent, level, mapped-event, and Crashlytics calls; native semantics unknown.</td>
+</tr>
+<tr>
+<td>Is Crashlytics used for diagnostic context?</td>
+<td>Yes</td>
+<td><strong>High / Direct + Bridge.</strong> Keys and breadcrumbs are called; upload internals unknown.</td>
+</tr>
+<tr>
+<td>Is AppLovin MAX present?</td>
+<td>Yes</td>
+<td><strong>Medium / Packaged.</strong> Assemblies/settings/resources; generic runtime ad facade does not prove every adapter&#39;s activity.</td>
+</tr>
+<tr>
+<td>Is Google UMP orchestrated?</td>
+<td>Yes</td>
+<td><strong>High / Direct + Bridge.</strong> Form and request-eligibility flow visible.</td>
+</tr>
+<tr>
+<td>Is Adjust integrated?</td>
+<td>No reliable evidence</td>
+<td><strong>High for this extraction.</strong> Zero SDK/package/API matches across scoped sources; legacy labels resolve to AppsFlyer/Firebase behavior.</td>
+</tr>
+<tr>
+<td>Is explicit client event sampling present?</td>
+<td>No reliable evidence</td>
+<td><strong>Medium.</strong> No common sampling/rate-limit/drop terms in reviewed BI/operational/bridge paths; native/backend sampling remains possible.</td>
+</tr>
+<tr>
+<td>Is strict FIFO delivery guaranteed?</td>
+<td>No</td>
+<td><strong>High / Direct.</strong> <code>pairs</code> traversal and retries prevent a demonstrated FIFO guarantee.</td>
+</tr>
+<tr>
+<td>Is exactly-once delivery guaranteed?</td>
+<td>Unknown, and not client-proven</td>
+<td><strong>High.</strong> Persistent retry can duplicate after ambiguous response; backend idempotency unavailable.</td>
+</tr>
+<tr>
+<td>Does telemetry upload before consent?</td>
+<td>Unknown</td>
+<td><strong>High on client call ordering.</strong> Fresh-install <code>session_start</code> reaches HTTP <code>Send</code> before the visible policy flow; actual network egress requires runtime capture.</td>
+</tr>
+<tr>
+<td>Are all catalog events emitted?</td>
+<td>Unknown</td>
+<td><strong>High.</strong> Static definitions and conditional call sites do not establish runtime frequency.</td>
+</tr>
+<tr>
+<td>Are all packaged ad adapters used?</td>
+<td>Unknown</td>
+<td><strong>High.</strong> Package presence is not runtime selection.</td>
+</tr>
+</tbody></table></div>
+<h4 class="subsection-heading" id="reproducibility-notes">Reproducibility notes<a class="heading-anchor" href="#reproducibility-notes" aria-label="Link to Reproducibility notes">#</a></h4>
+<p>The static call-site counts were generated with ripgrep over the readable decompiled Lua root. Adjust-specific negative searches covered package metadata, exported C# stubs, and readable Lua for common package, assembly, namespace, configuration, event, and API identifiers. The search intentionally did not treat ordinary English uses of “adjust” or legacy field names as SDK evidence.</p>
+<h4 class="subsection-heading" id="final-interpretation">Final interpretation<a class="heading-anchor" href="#final-interpretation" aria-label="Link to Final interpretation">#</a></h4>
+<p>Gossip Harbor&#39;s analytics system is best understood as a first-party telemetry backbone surrounded by specialized acquisition, crash, platform, and advertising services. <code>BIManager</code> is the broad product-measurement layer; AppsFlyer is the confirmed named attribution partner; Firebase provides analytics-facing identity/events and Crashlytics diagnostics; UMP provides ad-consent presentation while native ad enforcement remains unknown; OneSDK abstracts native integrations; and server configuration dynamically changes some external routing. The client also has a pre-policy first-party send attempt and a save window before cached requests are committed. That division of responsibility is more accurate than describing the game as “using one analytics SDK,” and it avoids the unsupported claim that Adjust is present.</p>
+</article>
+    <footer class="footer"><span>HTML edition · 9 October 2026 · Gossip Harbor 3.95.0</span><a href="#top">Back to top ↑</a></footer>
+  </main>
+</div>
+<script>
+  (() => {
+    const printButton = document.getElementById('print-button');
+    printButton.hidden = false;
+    printButton.addEventListener('click', () => window.print());
+    document.querySelectorAll('article code').forEach((element) => {
+      if (element.textContent.includes('/') && /\.(lua|cs|csv|json)/.test(element.textContent)) element.classList.add('source-reference');
+    });
+    const links = [...document.querySelectorAll('[data-section-link]')];
+    const sections = [...document.querySelectorAll('article .section-heading')];
+    let scheduled = false;
+    const updateActiveSection = () => {
+      let current = sections[0];
+      for (const section of sections) {
+        if (section.getBoundingClientRect().top <= 100) current = section;
+        else break;
+      }
+      if (current) for (const link of links) {
+        if (link.hash === '#' + current.id) link.setAttribute('aria-current', 'location');
+        else link.removeAttribute('aria-current');
+      }
+      scheduled = false;
+    };
+    window.addEventListener('scroll', () => {
+      if (!scheduled) { scheduled = true; requestAnimationFrame(updateActiveSection); }
+    }, { passive: true });
+    document.querySelector('.mobile-toc nav').addEventListener('click', (event) => {
+      if (event.target.closest('a')) event.currentTarget.closest('details').open = false;
+    });
+    updateActiveSection();
+  })();
+</script>
+</body>
+</html>
