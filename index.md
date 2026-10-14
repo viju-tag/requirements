@@ -14,3 +14,4 @@ Static HTML requirements and reports.
 - [Gossip Harbor Order Reference](./gossip-harbor-order-reference.html)
 - [Gossip Harbor Systems and Events](./gossip-harbor-systems-and-events.html)
 - [Gossip Harbor Board Items](./gossip-harbor-board-items.html)
+- [Merge Fever Board Items](./merge-fever-board-items.html)
