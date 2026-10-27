@@ -1,0 +1,1022 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>cgSDK 1.54.8 — Technical and Integration Report</title>
+<style>
+:root{color-scheme:light;--ink:#172735;--muted:#526575;--accent:#075f78;--border:#d8e1e7;--paper:#fff;--background:#f2f5f7}*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:24px}body{margin:0;background:var(--background);color:var(--ink);font:16px/1.7 system-ui,-apple-system,"Segoe UI",sans-serif}a{color:var(--accent);text-decoration-thickness:1px;text-underline-offset:3px}a:hover{color:#003b50}a:focus-visible{outline:3px solid #e6a32f;outline-offset:4px}.layout{max-width:1540px;margin:auto;display:grid;grid-template-columns:285px minmax(0,1fr);gap:36px;padding:32px}nav{position:sticky;top:24px;align-self:start;max-height:calc(100vh - 48px);overflow:auto;padding:18px 12px 18px 0}nav strong{display:block;font-size:13px;letter-spacing:.12em;text-transform:uppercase;margin-bottom:14px;color:var(--muted)}nav ol{list-style:none;margin:0;padding:0}nav li{margin:0 0 9px}nav a{display:block;font-size:13px;line-height:1.45;text-decoration:none;padding:4px 8px;border-radius:5px}nav a:hover{background:#e1ebf0}main{overflow-wrap:anywhere;min-width:0;background:var(--paper);padding:44px 48px;border:1px solid var(--border);border-radius:12px;box-shadow:0 4px 24px #16384908}h1{font-size:34px;line-height:1.2;letter-spacing:-.025em;margin:0 0 28px}h2{font-size:25px;line-height:1.3;margin:54px 0 20px;padding-top:20px;border-top:2px solid var(--border)}h3{font-size:19px;line-height:1.4;margin:30px 0 12px}p{margin:14px 0}li{margin:8px 0}.table-scroll{overflow-x:auto;margin:24px 0;border:1px solid var(--border);border-radius:7px}table{border-collapse:collapse;width:100%;font-size:14px;line-height:1.55}th,td{text-align:left;vertical-align:top;padding:12px 14px;border-bottom:1px solid var(--border);min-width:130px}th{background:#eaf1f5;font-weight:650}tr:last-child td{border-bottom:0}tbody tr:nth-child(even){background:#f8fafb}code{font: .88em/1.55 Consolas,"Courier New",monospace;background:#eef3f6;padding:2px 4px;border-radius:3px;overflow-wrap:anywhere}pre{overflow:auto;background:#162b3b;color:#edf6fa;padding:20px;border-radius:7px;line-height:1.6}pre code{background:none;padding:0;color:inherit;overflow-wrap:normal}footer{border-top:1px solid var(--border);margin-top:40px;padding-top:18px;font-size:13px;color:var(--muted)}.skip{position:absolute;left:12px;top:-60px;background:white;padding:10px;z-index:10}.skip:focus{top:12px}@media(max-width:1000px){.layout{grid-template-columns:220px minmax(0,1fr);gap:20px;padding:20px}main{padding:30px 24px}}@media(max-width:720px){.layout{display:block;padding:12px}nav{position:static;max-height:280px;margin-bottom:20px;padding:14px}main{padding:26px 18px}h1{font-size:28px}h2{font-size:22px}}@media print{body{background:white;font-size:10pt}.layout{display:block;padding:0;max-width:none}nav,.skip{display:none}main{border:0;padding:0;box-shadow:none}h2,h3{break-after:avoid}h2{margin-top:24px}pre,tr{break-inside:avoid}.table-scroll{overflow:visible}table{font-size:8pt}th,td{min-width:0;padding:6px}a{color:inherit}pre{white-space:pre-wrap}footer{font-size:8pt}}
+</style></head><body><a class="skip" href="#report">Skip to report</a><div class="layout"><nav aria-label="Table of contents"><strong>cgSDK 1.54.8 · Contents</strong><ol><li><a href="#section-1">1 Scope and evidence</a></li><li><a href="#section-2">2 SDK components and responsibilities</a></li><li><a href="#section-3">3 Initialization and shared configuration</a></li><li><a href="#section-7">4 Runtime configuration framework</a></li><li><a href="#section-11">5 A/B test framework</a></li><li><a href="#section-16">6 Segmentation interfaces and boundaries</a></li><li><a href="#section-21">7 Content configuration and caching</a></li><li><a href="#section-24">8 Analytics state and native summary delivery</a></li><li><a href="#section-28">9 Custom analytics events and managed delivery</a></li><li><a href="#section-33">10 Purchase revenue and analytics callbacks</a></li><li><a href="#section-34">11 Ad handling by format</a></li><li><a href="#section-43">12 Puzzle Master framework</a></li><li><a href="#section-44">13 Leaderboard framework</a></li><li><a href="#section-45">14 Daily Puzzle retrieval</a></li><li><a href="#section-46">15 Purchase-reporting contract</a></li><li><a href="#section-47">16 Level and progression integration</a></li><li><a href="#section-48">17 User information</a></li><li><a href="#section-49">18 Installation, lifecycle wiring, and platform dependencies</a></li><li><a href="#section-54">19 Persistence and refresh reference</a></li><li><a href="#section-55">20 Source findings requiring care</a></li><li><a href="#section-56">21 Device validation plan</a></li><li><a href="#section-57">22 Primary code reading order</a></li></ol></nav><main id="report"><h1>cgSDK 1.54.8: Technical and Integration Report</h1>
+<p>Report date: 27 October 2026<br>Package: <code>com.coregame.sdk</code>, version <code>1.54.8</code><br>Audience: developers and technical product owners integrating or evaluating cgSDK</p>
+<p>cgSDK exposes several distinct systems: runtime configuration retrieval, experiment assignment, historical metric submission, content delivery, analytics, ad mediation, purchase reporting, and goal/competition modules. They share native platform services and initialization data, but their caches, persistence, and delivery behavior differ.</p>
+<p>Here, <strong>managed code</strong> means the visible C# implementation; <strong>native code</strong> means the compiled Android/iOS libraries. This report describes the extracted 1.54.8 C# implementation and the Android/iOS bridge contracts. Game code appears only where it clarifies SDK consumption. Native libraries are included as compiled artifacts; backend targeting rules and native transport internals are outside the visible implementation. Source links identify the code behind each major behavior. <a href="com.coregame.sdk-1.54.8/package.json" title="Source line 1">Package metadata</a></p>
+<h2 id="section-1">1 Scope and evidence</h2>
+<p>The extracted package contains 348 files, including 67 C# files and 114 Unity metadata files. Its files were checked against the extraction inventory and remain unchanged. The Unity package version is 1.54.8; bundled Android and iOS components have their own version numbers. Those component numbers should not be used as the Unity package version.</p>
+<p>The SDK directory is <code>SDKExtract/com.coregame.sdk-1.54.8/</code>. Game examples refer to the project&#39;s <code>MergeFever/Assets/</code> files. Ten central integration files were also compared against the extracted <code>GameIntegration</code> copies and matched, including experiment overrides, runtime consumers, and the main-content handler.</p>
+<p>The companion <code>CGSDK_REPORT_SOURCES.json</code> records the referenced files, source lines, and SHA-256 hashes. It makes the source snapshot identifiable if the project changes later. Findings about failure conditions below are derived from control flow; they are not results of device tests or live backend requests.</p>
+<h2 id="section-2">2 SDK components and responsibilities</h2>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>Component</th>
+<th>Responsibility</th>
+<th>Result or destination</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>SdkManager</code></td>
+<td>Initializes services and forwards lifecycle changes</td>
+<td>Native SDK, trackers, content services</td>
+</tr>
+<tr>
+<td><code>GameCallbacks</code></td>
+<td>Accepts native identity/configuration callbacks</td>
+<td>SDK state, PlayerPrefs, game events</td>
+</tr>
+<tr>
+<td><code>CgSdkRuntimes</code></td>
+<td>Reads a named runtime configuration</td>
+<td>String payload</td>
+</tr>
+<tr>
+<td><code>CgSdkExperiments</code></td>
+<td>Reads a selected experiment variant</td>
+<td>Integer variant</td>
+</tr>
+<tr>
+<td><code>CgSdkHistoricData</code></td>
+<td>Submits historical metrics for segmentation infrastructure</td>
+<td>Native ingestion; no assignment result</td>
+</tr>
+<tr>
+<td><code>CgSdkMainContent</code></td>
+<td>Reads and caches level content for eligible users</td>
+<td>Level data and local asset paths, or null</td>
+</tr>
+<tr>
+<td><code>CgSdkContentCatalog</code></td>
+<td>Reads a catalog item by key and index</td>
+<td>Encoded item string, or empty string</td>
+</tr>
+<tr>
+<td><code>TrackingBridge</code></td>
+<td>Maintains puzzle, session, and interval tracking state</td>
+<td>Serialized summaries passed to native tracking</td>
+</tr>
+<tr>
+<td><code>SharedTracker</code></td>
+<td>Constructs a custom analytics event</td>
+<td>Managed custom-event queue</td>
+</tr>
+<tr>
+<td><code>CgSdkTracker</code></td>
+<td>Persists and uploads custom-event batches</td>
+<td>Direct HTTP request to CoreGame tracking service</td>
+</tr>
+<tr>
+<td><code>AdsNative</code></td>
+<td>Requests ads and consent/diagnostics controls</td>
+<td>Native mediation; lifecycle callbacks</td>
+</tr>
+<tr>
+<td><code>CgSdkPuzzleMaster</code></td>
+<td>Maintains goal progress and claim state</td>
+<td>Native snapshots and game-owned reward grants</td>
+</tr>
+<tr>
+<td><code>CgSdkLeaderBoard</code></td>
+<td>Exchanges competition commands and status</td>
+<td>Android native service; game callbacks</td>
+</tr>
+<tr>
+<td><code>CgSdkDailyPuzzle</code></td>
+<td>Retrieves and caches a daily payload</td>
+<td>Android native retrieval or Editor asset</td>
+</tr>
+<tr>
+<td><code>IapNative</code></td>
+<td>Reports completed purchases</td>
+<td>Native purchase-processing bridge</td>
+</tr>
+<tr>
+<td><code>LevelNative</code></td>
+<td>Coordinates progression signals</td>
+<td>Analytics, Puzzle Master, and native level calls</td>
+</tr>
+<tr>
+<td><code>CgSdkUser</code></td>
+<td>Holds an email value</td>
+<td>Memory and iOS forwarding</td>
+</tr>
+</tbody></table></div>
+<p>Two distinctions are central. First, <code>CgSdkRuntimes</code> and <code>CgSdkExperiments</code> expose native results; they do not implement remote targeting in C#. Second, <code>TrackingBridge</code> and <code>SharedTracker</code> use separate delivery routes. The managed queue&#39;s retry and persistence rules cannot be assumed to apply to native-bound summaries. <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/SdkManager.cs" title="Source line 77">Initialization</a> · <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Supplemental/CgSdkRuntimes.cs" title="Source line 20">Runtime interface</a> · <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Supplemental/CgSdkExperiments.cs" title="Source line 34">Experiment interface</a> · <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Track/TrackingBridge.cs" title="Source line 342">Native summary collection</a> · <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Track/model/SharedTracker.cs" title="Source line 62">Custom events</a></p>
+<h2 id="section-3">3 Initialization and shared configuration</h2>
+<h3 id="section-4">Build configuration is separate from runtime configuration</h3>
+<p>Android uses the <code>Resources/CoreGameSDK/CgSdkAndroidBuildConfig</code> asset. Its fields include app name and Facebook identifiers. The Android prebuild processor requires the asset and nonblank Facebook app ID/client token, then writes or updates four <code>CGSDK_*</code> properties in the Gradle properties template. Missing required values fail the build. <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Config/ScriptableObjects/CgSdkAndroidBuildConfig.cs" title="Source line 5">Android config type</a> · <a href="com.coregame.sdk-1.54.8/Mediation/Editor/CgSdkAndroidConfigGenerator.cs" title="Source line 13">Android generator</a></p>
+<p>iOS uses <code>Resources/CoreGameSDK/CgSdkIOSBuildConfig</code>. The postbuild processor configures exported plist values, URL schemes, attribution entries, associated domains, entitlements, and linker/build settings. Ad Review setup requires its configured key and packaged injection resources. These are build inputs, not feature experiments or runtime payloads. Actual project keys and tokens are intentionally not reproduced here. <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Config/ScriptableObjects/CgSdkIOSBuildConfig.cs" title="Source line 5">iOS config type</a> · <a href="com.coregame.sdk-1.54.8/Mediation/Editor/PostBuildProcess.cs" title="Source line 53">iOS postbuild</a></p>
+<h3 id="section-5">Startup sequence</h3>
+<p><code>SdkManager.OnAwake()</code> records install time if absent, invokes native initialization, creates the main-thread executor, initializes <code>TrackingBridge</code>, starts the periodic service, and restores main-content services. It then schedules a fallback initialization callback after five real-time seconds. <code>TrackingBridge.Initialize()</code> restores live tracking state and checks session rollover before starting the managed custom-event queue. <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/SdkManager.cs" title="Source line 77">SDK startup</a> · <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Track/TrackingBridge.cs" title="Source line 40">Tracking initialization</a></p>
+<p>Native initialization supplies a pipe-delimited configuration. <code>GameCallbacks.HandleCoreGameSDKInitSuccess()</code> stores the identity/context fields and user tracking fraction in <code>SdkManager</code> and PlayerPrefs, then explicitly calls <code>PlayerPrefs.Save()</code>. Optional event thresholds and hardcoded experiment assignments populate separate in-memory maps:</p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Role visible in C#</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Game ID and client/platform ID</td>
+<td>Identify the game and client in tracking payloads</td>
+</tr>
+<tr>
+<td>User ID</td>
+<td>Identifies the player; must be nonempty before managed uploads</td>
+</tr>
+<tr>
+<td>Company name and build number</td>
+<td>Identify the deployment in tracking payloads</td>
+</tr>
+<tr>
+<td>Country, calendar day, UTC offset</td>
+<td>Context attached to tracking</td>
+</tr>
+<tr>
+<td>User tracking fraction</td>
+<td>Input to custom-event sampling</td>
+</tr>
+<tr>
+<td>Optional event-threshold map</td>
+<td>Configures sampling by custom-event name</td>
+</tr>
+<tr>
+<td>Optional hardcoded experiment assignments</td>
+<td>Populates the hardcoded experiment dictionary</td>
+</tr>
+</tbody></table></div>
+<p>The presence of country or calendar-day fields does not establish that any particular experiment targets those attributes. Their use for targeting remains a native/backend question. <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/GameCallbacks.cs" title="Source line 26">Initialization payload</a></p>
+<h3 id="section-6">Initialization is accepted once</h3>
+<p>The callback sets <code>InitSucceeded</code> before scheduling configuration processing on the main thread. Later initialization callbacks return immediately. The five-second fallback reconstructs the nine persisted identity/user-fraction fields, but not the optional event-threshold map or hardcoded experiment assignments.</p>
+<p>Consequently, if the fallback wins, this handler ignores a later real native initialization payload. On a fresh installation, the fallback can contain an empty user ID; the managed tracker then holds uploads while that ID remains empty. This is a conditional source-level failure scenario, not a reproduced device result. <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/SdkManager.cs" title="Source line 139">Fallback implementation</a> · <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/GameCallbacks.cs" title="Source line 26">One-shot guard</a> · <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Track/api/CgSdkTracker.cs" title="Source line 192">Upload identity gate</a></p>
+<h2 id="section-7">4 Runtime configuration framework</h2>
+<h3 id="section-8">Public contract</h3>
+<p><code>CgSdkRuntimes.Instance.GetRuntimeData(runtimeName)</code> returns a string. The wrapper does not impose a JSON schema or interpret fields. The consumer owns parsing, validation, and fallback decisions.</p>
+<p>The C# implementation maintains an in-memory concurrent dictionary keyed by runtime name. A value is reused while its age is less than 300 seconds. On a miss or expired entry, it calls the native platform API and stores the returned string with the current timestamp. This is lazy expiration on access, not a background refresh timer. <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Supplemental/CgSdkRuntimes.cs" title="Source line 20">Runtime cache</a></p>
+<p>Android calls <code>com.ads.sdk.supplemental.runtime.Runtimes.getRuntimeDataForGame</code>. iOS imports the corresponding native function. Caught bridge failures return an empty string; the iOS wrapper also handles a null pointer and frees a returned native string. <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Platform/Android/CgSdkRuntimesAndroid.cs" title="Source line 20">Android runtime bridge</a> · <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Platform/iOS/CgSdkRuntimesIOS.cs" title="Source line 19">iOS runtime bridge</a></p>
+<h3 id="section-9">Empty responses and refresh limits</h3>
+<p>Empty native results are cached for the same 300 seconds as valid payloads. A consumer that retries rapidly can therefore receive the same cached empty response until the entry expires. The facade exposes no explicit cache-clear API and performs no C# disk persistence.</p>
+<p>The wrapper does not reveal whether the native result came from memory, disk, or a recent network request. It also does not establish the native fetch interval, endpoint, retry policy, or targeting rules. The 300-second value describes only the C# cache.</p>
+<h3 id="section-10">Consumer examples</h3>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>Game consumer</th>
+<th>SDK lookup</th>
+<th>Application and fallback</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Interstitial configuration</td>
+<td>Fixed runtime key <code>game_it_ads_cd</code></td>
+<td>Empty/invalid response uses default fields and leaves initialization retryable. After a valid parse, that consumer stops reinitializing. Its experiment label is logged but does not change the lookup key.</td>
+</tr>
+<tr>
+<td>AdPass</td>
+<td>Positive <code>ABn</code> maps to <code>game_ad_pass_var{n}</code></td>
+<td>CONTROL, missing payload, or invalid payload disables the device feature. Config is applied during initialization and again on meta-gameplay start.</td>
+</tr>
+<tr>
+<td>Energy Booster</td>
+<td>Positive <code>ABn</code> maps to <code>game_energy_booster_v2_var{n}</code></td>
+<td>CONTROL, missing payload, or invalid payload disables the device feature. Application occurs at startup; no automatic retry loop was found.</td>
+</tr>
+</tbody></table></div>
+<p>In these keys, <code>{n}</code> is the positive variant number. AdPass and Energy Booster accept their supported JSON or colon-separated <code>key=value</code> forms. Both bypass SDK application in the Unity Editor. A serialized default/example string in a consumer is not necessarily its production fallback: these two device paths disable the feature instead. <a href="../MergeFever/Assets/Tag/MergeGame/CoreGame/Scripts/GoogleAdmob/InterstitialAdSdkRuntimeConfig.cs" title="Source line 48">Interstitial consumer</a> · <a href="../MergeFever/Assets/Tag/MergeGame/Features/AdPass/Scripts/AdPassSdkRuntimeConfig.cs" title="Source line 65">AdPass application</a> · <a href="../MergeFever/Assets/Tag/MergeGame/Features/AdPass/Scripts/AdPassManager.cs" title="Source line 74">AdPass refresh points</a> · <a href="../MergeFever/Assets/Tag/MergeGame/Features/Source%20Energy%20Booster/Scripts/SourceEnergyMultiplierConfig.cs" title="Source line 66">Booster application</a></p>
+<h2 id="section-11">5 A/B test framework</h2>
+<h3 id="section-12">Server-managed experiments</h3>
+<p>The public API is <code>GetExperimentVariant(expName, codeVersion)</code>. C# asks native code for an allocated integer variant. Android calls <code>ExperimentManager.getChosenVariantForGame</code>; iOS imports a native function of the same purpose.</p>
+<p>Cached results are reused while they are less than 300 seconds old; the next read at or after that age calls native code again. The dictionary is keyed only by experiment name. Although <code>codeVersion</code> is forwarded on a native call, changing it does not bypass a cached result for that name. Control is integer <code>0</code>. Caught native-call failures return control, which can also be cached. <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Supplemental/CgSdkExperiments.cs" title="Source line 34">Experiment facade</a> · <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Platform/Android/CgSdkExperimentsAndroid.cs" title="Source line 22">Android allocation bridge</a> · <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Platform/iOS/CgSdkExperimentsIOS.cs" title="Source line 20">iOS allocation bridge</a></p>
+<p>The wrapper does not show a random draw, bucketing hash, traffic allocation percentage, eligibility rule, or assignment persistence policy. It exposes the selected result. Nothing in this facade establishes whether reassignment can occur between sessions or after a configuration update.</p>
+<h3 id="section-13">Game mapping and local overrides</h3>
+<p>The game converts positive integers into names such as <code>AB1</code> and <code>AB2</code>; zero or negative results become <code>CONTROL</code>. It passes an empty code-version string in the inspected adapter. Before contacting cgSDK, <code>ABTestHandler</code> checks a locally saved override. An explicit setter saves overrides to <code>ABTestPlayerData.json</code>; the ordinary SDK read does not save its returned assignment into that override file.</p>
+<p>For example, the energy feature requests experiment <code>game_energy_shop</code>, then selects the corresponding <code>ABTestType</code> entry from its feature-config list. The feature-configuration list and the experiment assignment are separate inputs. Its unmatched-variant fallback is the first list entry, not an explicit search for a CONTROL entry. <a href="../MergeFever/Assets/Tag/Plugins/ABTest/Scripts/ABTestHandler.cs" title="Source line 58">Game experiment adapter</a> · <a href="../MergeFever/Assets/Tag/MergeGame/CoreGame/Scripts/RemoteConfig/EnergyConfig.cs" title="Source line 33">Energy selection example</a> · <a href="../MergeFever/Assets/Tag/MergeGame/CoreGame/Prefabs/Manager/Firebase%20Manager.prefab" title="Source line 5245">Configured experiment ID</a></p>
+<p>The debug selection screen saves overrides and restarts the game to apply them. A persistent debug override can therefore explain why a test installation disagrees with the SDK&#39;s native assignment. It is a game-owned override, not proof that cgSDK&#39;s allocation changed. <a href="../MergeFever/Assets/Tag/Temp%20Utility/New%20Utility/Scripts/Screens/ABTestCustomDebugger.cs" title="Source line 133">Debug apply behavior</a></p>
+<h3 id="section-14">Hardcoded experiments</h3>
+<p>Hardcoded experiments use a separate path:</p>
+<ol>
+<li>The game may provide a definition string through <code>GetHardCodedExperimentsFromGame</code>, documented as <code>name:version:variants_info;...</code>.</li>
+<li>Android initialization forwards that string to native code. The visible iOS initialization call has no equivalent config argument.</li>
+<li>The native initialization payload may return <code>name:variant;...</code> assignments.</li>
+<li><code>UpdateHardcodedExperimentsData()</code> updates a separate session dictionary.</li>
+<li><code>GetHardcodedExperimentVariant(expName, codeVersion)</code> returns the dictionary value or control.</li>
+</ol>
+<p>This getter does not use <code>codeVersion</code> and has no TTL check. Updates do not clear the dictionary first, so omitted entries remain. A parsing error can leave assignments processed before the error already updated. No game C# subscriptions or calls to the hardcoded experiment APIs were found in the inspected project. <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Supplemental/CgSdkExperiments.cs" title="Source line 63">Hardcoded experiment implementation</a> · <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/SdkManager.cs" title="Source line 126">Definition forwarding</a></p>
+<h3 id="section-15">Comparison</h3>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Server-managed experiment</th>
+<th>Hardcoded experiment</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Definition source visible to C#</td>
+<td>Native/server-managed interface</td>
+<td>Optional game callback string</td>
+</tr>
+<tr>
+<td>Read API</td>
+<td><code>GetExperimentVariant</code></td>
+<td><code>GetHardcodedExperimentVariant</code></td>
+</tr>
+<tr>
+<td>Assignment source</td>
+<td>Native chosen-variant API</td>
+<td>Native init callback data</td>
+</tr>
+<tr>
+<td>C# cache key</td>
+<td>Experiment name</td>
+<td>Experiment name</td>
+</tr>
+<tr>
+<td>C# expiration</td>
+<td>300 seconds, checked on access</td>
+<td>None in getter</td>
+</tr>
+<tr>
+<td>Code-version handling</td>
+<td>Forwarded on a native lookup; absent from cache key</td>
+<td>Parameter unused</td>
+</tr>
+<tr>
+<td>Missing/error fallback</td>
+<td>Control, <code>0</code></td>
+<td>Control, <code>0</code></td>
+</tr>
+<tr>
+<td>C# assignment storage</td>
+<td>In-memory session dictionary</td>
+<td>In-memory session dictionary</td>
+</tr>
+</tbody></table></div>
+<p>The session dictionaries do not tell us whether native code separately persists assignments.</p>
+<h2 id="section-16">6 Segmentation interfaces and boundaries</h2>
+<h3 id="section-17">Distinct segmentation-related interfaces</h3>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>Operation</th>
+<th>Visible interface</th>
+<th>What the interface establishes</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Experiment variant retrieval</td>
+<td><code>CgSdkExperiments</code></td>
+<td>The selected variant for an experiment</td>
+</tr>
+<tr>
+<td>Named runtime retrieval</td>
+<td><code>CgSdkRuntimes</code></td>
+<td>The string returned for a named runtime</td>
+</tr>
+<tr>
+<td>Main-content eligibility</td>
+<td><code>CgSdkMainContent</code> and native callbacks</td>
+<td>Whether SDK-delivered content is enabled and available</td>
+</tr>
+<tr>
+<td>Custom-event sampling</td>
+<td><code>SharedTracker</code> and tracking fractions</td>
+<td>Whether a custom event passes the sampling gate before queue submission</td>
+</tr>
+</tbody></table></div>
+<p>These interfaces do not expose one universal segment ID. In particular, an analytics sampling fraction is not an A/B-test allocation percentage. The C# source does not establish that a submitted historical metric immediately changes an experiment or runtime response.</p>
+<h3 id="section-18">Historic Data Segmentation API</h3>
+<p><code>CgSdkHistoricData</code> explicitly exposes the SDK&#39;s historical metric ingestion interface. A <code>GameMetric</code> contains:</p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>metric</code></td>
+<td>Required metric name</td>
+</tr>
+<tr>
+<td><code>s1</code> to <code>s5</code></td>
+<td>Optional string dimensions</td>
+</tr>
+<tr>
+<td><code>d1</code> to <code>d10</code></td>
+<td>Optional nullable double measures</td>
+</tr>
+</tbody></table></div>
+<p><code>TrackGameMetric(metric)</code> submits one metric; <code>TrackGameMetrics(list)</code> submits a batch. Both return <code>void</code>. There is no success callback, segment result, or query API in this facade. Data is forwarded outside the Unity Editor to the Android JNI or iOS native bridge. <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Impl/HistoricData/CgSdkHistoricData.cs" title="Source line 37">Historic metric API</a></p>
+<p>The wrapper rejects null metrics, empty names, and reserved characters in the name or string dimensions. The reserved characters are caret, comma, pipe, NUL, and semicolon. Any invalid item rejects an entire batch. Name validation checks null/empty, not whitespace-only content; numeric range and finite-number checks are not implemented here.</p>
+<p>Serialization uses caret-separated fields and semicolons between metrics. Null fields become empty positions; doubles use round-trip formatting with invariant culture. These details matter because this is a positional native protocol, not a dictionary of arbitrary named properties. <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Impl/HistoricData/CgSdkHistoricData.cs" title="Source line 157">Validation and serialization</a></p>
+<p>No calls to <code>CgSdkHistoricData</code>, <code>TrackGameMetric(s)</code>, or construction of <code>GameMetric</code> were found in game C# under either the live project or extracted integration. This establishes that custom game-side use of this API is absent in the searched code; it does not rule out historical tracking internal to native SDK components.</p>
+<h3 id="section-19">Eligibility supplied by native code</h3>
+<p>Main-content callbacks can enable content infrastructure for a player, deliver levels, invalidate levels, and change cache capacity. The C# wrapper consumes those decisions; it does not calculate the underlying audience criteria.</p>
+<p>The game&#39;s interstitial integration also explicitly delegates payer/nonpayer handling to the SDK, while keeping a local unlock-level check. That comment and code identify the ownership boundary, but do not reveal the native payer rules or whether a particular player currently qualifies. <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Platform/Android/GameCallbacksAndroid.cs" title="Source line 97">Native content callbacks</a> · <a href="../MergeFever/Assets/Tag/MergeGame/CoreGame/Scripts/GoogleAdmob/InterstitialAd.cs" title="Source line 122">Interstitial eligibility example</a></p>
+<h3 id="section-20">What remains inside native code or the backend</h3>
+<p>The available source does not establish exact audience conditions, spend windows, country/cohort rules, weighting, bucketing, cross-device assignment, reassignment, or whether historical metrics drive a particular experiment. Those questions require the native implementation, configuration definitions, or backend documentation. Runtime values and experiment integers alone are insufficient to reconstruct those policies.</p>
+<h2 id="section-21">7 Content configuration and caching</h2>
+<h3 id="section-22">Main content</h3>
+<p><code>CgSdkMainContent.GetLevelData(levelNum, currentLevelNum)</code> returns null when content infrastructure is off. On a cache hit, it returns level data plus local asset paths. On a miss, it asks native code to fetch and returns null immediately. It does not wait for a download or select packaged game content on the caller&#39;s behalf. <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Impl/MainContent/CgSdkMainContent.cs" title="Source line 155">Main-content lookup</a></p>
+<p>The default cache cap is three levels. Native callbacks may supply a positive replacement cap, add/update level records, or drop named levels. Level data, asset-directory information, and the cap are restored through PlayerPrefs. Saved level records use <code>level|data|assets|restart</code> fields joined by carets; the deprecated restart field remains relevant when restoring older data.</p>
+<p>The implementation handles callbacks that arrive during startup restoration, including early drops and capacity updates. Save snapshots are generation-checked so older queued saves do not overwrite newer state. However, normal trimming after a delivery removes at most one lowest-numbered cached level; a multi-level delivery can leave the cache above its configured cap. A cap update does not immediately trim existing records, and adding one new level while removing one old level can preserve that surplus. <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Impl/MainContent/CgSdkMainContent.cs" title="Source line 219">Content restore</a> · <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Impl/MainContent/CgSdkMainContent.cs" title="Source line 341">Content saving</a> · <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Impl/MainContent/CgSdkMainContent.cs" title="Source line 483">Capacity updates</a> · <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Impl/MainContent/CgSdkMainContent.cs" title="Source line 532">Delivery and trimming</a> · <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Impl/MainContent/CgSdkMainContent.cs" title="Source line 642">Invalidation</a></p>
+<p><code>GameContentHandler</code> provides a game-owned fallback policy: it can use SDK content, previously saved SDK level data, or bundled content depending on eligibility and availability. The SDK lookup itself does not select these fallbacks. <a href="../MergeFever/Assets/Tag/MergeGame/CoreGame/Scripts/Utility/GameContentHandler.cs" title="Source line 63">Game content example</a></p>
+<h3 id="section-23">Content catalog</h3>
+<p><code>CgSdkContentCatalog.GetCatalogItem(key, index)</code> performs a synchronous native read and returns <code>@</code>-delimited <code>key=value</code> text. The contract returns an empty string for missing/unavailable items. The Editor path returns an empty string.</p>
+<p>This facade has no C# TTL, fetch API, invalidation method, or persistence layer. The 300-second runtime/experiment cache does not apply to this catalog interface. <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Impl/ContentCatalog/CgSdkContentCatalog.cs" title="Source line 33">Catalog contract</a></p>
+<h2 id="section-24">8 Analytics state and native summary delivery</h2>
+<h3 id="section-25">Tracker families</h3>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>Tracker</th>
+<th>Main purpose</th>
+<th>Representative data</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>PuzzleTracker</code></td>
+<td>A level/puzzle outcome</td>
+<td>Number/type, elapsed time, result, currency changes, wallet, ads, IAP revenue, retries, popup/choke-point data</td>
+</tr>
+<tr>
+<td><code>SessionTracker</code></td>
+<td>A session summary</td>
+<td>Duration, progression, ad counts/revenue, currency activity, start/end wallet, lapse time, active events</td>
+</tr>
+<tr>
+<td><code>SessionTrackerNSec</code></td>
+<td>Periodic activity summary</td>
+<td>Puzzle counts, screen/popup views, time, wallet/currencies, ad counts/revenue, game-defined string slots</td>
+</tr>
+<tr>
+<td><code>SharedTracker</code></td>
+<td>Custom event with a game-defined schema</td>
+<td>Parent, event name, up to 40 string slots and 10 numeric slots</td>
+</tr>
+</tbody></table></div>
+<p><code>TrackingBridge.SetExtraParameter</code> forwards a key/value to the live summary trackers. Each tracker recognizes its own keys. The operation is key-specific: for example, interval screen-view handlers increment by one even if a larger integer is supplied, while wallet/time handlers assign the supplied value. It is not a general-purpose &quot;add this amount&quot; API. <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Track/TrackingBridge.cs" title="Source line 373">Parameter dispatch</a> · <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Track/model/SessionTrackerNSec.cs" title="Source line 73">Interval handlers</a></p>
+<p>Currency information uses <code>CurrencyInfo</code>: currency name, start value, free earnings, IAP earnings, spending, and final value. Tracker serialization converts this into positional strings. <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Track/model/CurrencyInfo.cs" title="Source line 3">Currency model</a></p>
+<h3 id="section-26">Puzzle and session lifecycle</h3>
+<p>A level start creates a live puzzle tracker unless tracking is not initialized or a puzzle tracker already exists. Completion/failure fills the puzzle result and duration, collects the summary, clears the live puzzle, updates session/interval counters, and saves live state.</p>
+<p>After at least 1,800 seconds since the recorded pause, the bridge marks any live puzzle as a drop-off, collects the previous session summary, and creates a new session. The lifetime session count increments, the daily count increments or resets for a new day, and the per-session puzzle count resets. The live puzzle tracker remains. A fresh installation creates an initial session while restoring local state. <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Track/TrackingBridge.cs" title="Source line 205">Puzzle lifecycle</a> · <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Track/TrackingBridge.cs" title="Source line 268">Session rollover</a></p>
+<p>On application pause, the bridge records pause time, updates session elapsed time, requests the game&#39;s interval data, collects the interval summary, saves live state, and hands off remaining native-bound records. The interval callback lets the game populate its fields before the SDK serializes them; the SDK then replaces the interval tracker. <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Track/TrackingBridge.cs" title="Source line 167">Pause handling</a> · <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Track/TrackingBridge.cs" title="Source line 305">Interval collection</a></p>
+<p><code>PeriodicRepeater</code> is implemented in <code>Supplemental/Util.cs</code>. It waits <code>Task.Delay(60000, token)</code> before each interval collection, starts on SDK awake/resume, and cancels on pause/destroy. This is a nominal 60-second async delay independent of Unity time scale; scheduling or application suspension can still delay execution. Resume starts a fresh wait. The interval tracker&#39;s 30-second comment does not match the executable schedule. The 1,800-second session boundary is separate. <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Supplemental/Util.cs" title="Source line 225">Periodic scheduler</a></p>
+<h3 id="section-27">Native handoff and serialization</h3>
+<p>Puzzle and session records are colon-delimited. Interval records use a <code>shared:sessionNSec:</code> prefix, but still follow the native summary route. A record&#39;s textual prefix does not determine its transport.</p>
+<p><code>TrackingBridge.CollectTracking()</code> joins records with carets, passes them to native when forced or when the buffer exceeds 500 characters, and clears its C# buffer. Android calls <code>TrackerController.updateInPendingTracking</code>; iOS calls the corresponding native function. The source comment mentioning 1,000 characters is stale; the actual comparison is <code>&gt; 500</code>.</p>
+<p>The bridge wrappers catch and log errors but return no handoff acknowledgment. The C# caller clears the buffer even after a caught native-call error. Native storage, retries, network endpoints, acknowledgment handling, and sampling cannot be inferred from this boundary. <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Track/TrackingBridge.cs" title="Source line 342">Collection threshold</a> · <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Platform/Android/TrackerNativeAndroid.cs" title="Source line 21">Android tracker bridge</a> · <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Platform/iOS/TrackerNativeIOS.cs" title="Source line 21">iOS tracker bridge</a></p>
+<p>Live puzzle/session state is written to PlayerPrefs. The pending serialized summary buffer itself is not included in that state, and <code>SaveLocal()</code> does not explicitly call <code>PlayerPrefs.Save()</code>. A small completed summary can therefore remain only in C# memory until handoff. <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Track/TrackingBridge.cs" title="Source line 109">Live-state saving</a></p>
+<h2 id="section-28">9 Custom analytics events and managed delivery</h2>
+<h3 id="section-29">Event schema</h3>
+<p><code>SharedTracker</code> supplies <code>Parent</code>, string slots <code>S1</code> through <code>S40</code>, and numeric slots <code>D1</code> through <code>D10</code>. In the inspected game, <code>S1</code> is the custom event name and <code>Parent</code> groups related events.</p>
+<p>The SDK overwrites <code>S39</code> with build number and <code>S40</code> with calendar day. These two fields should not hold game-specific payload values. It replaces colon and caret characters in the string slots, then serializes:</p>
+<pre><code class="language-text">shared:Parent:timestamp:S1:...:S40:D1:...:D10
+</code></pre>
+<p><code>Parent</code> is concatenated without passing through the same sanitizer. Numeric values use invariant-culture formatting. The event is handed directly to <code>CgSdkTracker</code>; it does not pass through <code>TrackingBridge.CollectTracking()</code>. <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Track/model/SharedTracker.cs" title="Source line 62">Custom event implementation</a></p>
+<h3 id="section-30">Sampling</h3>
+<p>Before serialization, <code>SendTracking()</code> applies this condition:</p>
+<pre><code class="language-text">If userTrackingFraction &gt; thresholdFor(S1), drop the event.
+</code></pre>
+<p>The threshold map is encoded as <code>eventName=integer:eventName=integer</code>. Updating it replaces the map. An unconfigured event has threshold zero. No fresh random draw per event is visible here, and the integer scale is not documented by this code; it should not be described as a specific percentage.</p>
+<p>The user value and event thresholds arrive through native initialization or a later tracking-fractions callback. These sampling values control custom-event collection, not feature assignment. <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Track/model/SharedTracker.cs" title="Source line 62">Sampling decision</a> · <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Track/api/CgSdkTracker.cs" title="Source line 165">Threshold map</a> · <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/GameCallbacks.cs" title="Source line 74">Sampling update callback</a></p>
+<h3 id="section-31">Persistence and upload</h3>
+<p>An event that passes sampling is offered to the managed queue. If the queue is not initialized, the call is dropped. If initialization has started but restoration is unfinished, the event is buffered temporarily. Once ready, the queue appends events and saves them to <code>Application.persistentDataPath/cgsdk/trkuni.json</code>.</p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>Setting</th>
+<th>Visible behavior</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>First scheduler check</td>
+<td>Six seconds after managed initialization</td>
+</tr>
+<tr>
+<td>Subsequent checks</td>
+<td>Every five seconds</td>
+</tr>
+<tr>
+<td>Batch size</td>
+<td>Up to 100 records</td>
+</tr>
+<tr>
+<td>Throttle</td>
+<td>At least 30 seconds after the previous request completes, except the first dispatch</td>
+</tr>
+<tr>
+<td>Concurrent requests</td>
+<td>One at a time</td>
+</tr>
+<tr>
+<td>Identity requirement</td>
+<td>Nonempty SDK user ID</td>
+</tr>
+<tr>
+<td>Request timeout</td>
+<td>30 seconds</td>
+</tr>
+<tr>
+<td>Endpoint</td>
+<td><code>https://track.chaosenginelabs.games/rest</code></td>
+</tr>
+<tr>
+<td>Transport body</td>
+<td>Form field <code>data</code> containing a JSON envelope</td>
+</tr>
+</tbody></table></div>
+<p>The scheduler and throttle use Unity&#39;s scaled timing through <code>InvokeRepeating</code> and <code>Time.time</code>. These intervals are not guaranteed wall-clock delays when game time is paused or scaled. The initialization fallback described earlier instead uses real-time waiting.</p>
+<p>The envelope has action <code>sync</code>, category <code>tracker</code>, and a data object containing game/client/user/company/build/country/calendar-day/UTC-offset context plus the encoded event batch. The field named <code>cohort</code> is populated from <code>CalendarDay</code>; this mapping does not establish an experiment cohort. <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Track/api/CgSdkTracker.cs" title="Source line 130">Queue initialization</a> · <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Track/api/CgSdkTracker.cs" title="Source line 192">Queue scheduling and request</a> · <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Track/api/CgSdkTracker.cs" title="Source line 379">Payload construction</a></p>
+<p>HTTP failure or an invalid/non-success response normally leaves the queue for another scheduler attempt. Successful responses are expected to report a synced count. There is no explicit per-event idempotency protocol in the inspected code; an accepted request whose response is lost can be retried, so exactly-once delivery should not be promised.</p>
+<p>Pausing the application does not trigger an immediate managed-queue upload; the queue&#39;s application-state handler is empty. Events already saved to disk remain available for later upload. Corrupt or unreadable stored data is discarded during restoration. <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Track/api/CgSdkTracker.cs" title="Source line 295">Queue restoration and storage</a> · <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Track/api/CgSdkTracker.cs" title="Source line 400">Response handling</a></p>
+<h3 id="section-32">Concrete game example</h3>
+<p>When an order completes, the game creates a <code>SharedTracker</code> with <code>Parent = &quot;game_features&quot;</code> and <code>S1 = &quot;order_complete&quot;</code>. It supplies level in <code>S2</code>, ordered items in <code>S3</code>–<code>S5</code>, order type in <code>S7</code>, currency data in <code>S8</code>, and remaining-order counts in <code>S9</code>. It calls <code>SendTracking()</code> and resets its order-currency tracking.</p>
+<p>This explains why a game log at the send call does not prove backend receipt: sampling may reject the event, initialization may not be ready, and successful queueing is followed by a later HTTP upload. <a href="../MergeFever/Assets/Tag/MergeGame/CoreGame/Scripts/Analytics/CoreGameSdkAnalyticsHandler.cs" title="Source line 457">Order event example</a></p>
+<p>The game&#39;s <code>gameNSec</code> event is another <code>SharedTracker</code> custom event. It accompanies the SDK&#39;s native-bound interval summary but follows the managed HTTP route. <a href="../MergeFever/Assets/Tag/MergeGame/CoreGame/Scripts/Analytics/CoreGameSdkAnalyticsHandler.cs" title="Source line 240">Game interval example</a></p>
+<h2 id="section-33">10 Purchase revenue and analytics callbacks</h2>
+<p><code>IapNative.SendPurchaseInfoVerified()</code> parses prices, updates the SDK&#39;s revenue accumulators, and forwards purchase information to native code. Those C# revenue increments occur before downstream native validation. The method name alone is not evidence that native receipt verification has already succeeded when the summary counters change. <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/IapNative.cs" title="Source line 60">Purchase forwarding</a></p>
+<p>Ad-revenue callbacks update summary counts and revenue, then notify the game through <code>OnAdRevenueReceived</code>. Banner and rewarded revenue update puzzle/session/interval tracking; interstitial revenue updates session/interval tracking. If enabled through <code>TrackIlrdInGameAnalytics(true)</code>, the SDK also forwards impression-level revenue to GameAnalytics. MAX forwarding exists for Android/iOS; the visible IronSource forwarding path is Android-only. <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/AdsNativeCallbacks.cs" title="Source line 54">Ad callbacks</a> · <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Supplemental/GameAnalyticsTracker.cs" title="Source line 30">GameAnalytics forwarding</a></p>
+<p>The SDK raises <code>OnSendFirebaseEvent</code> with an event name and revenue value. The game&#39;s subscriber adds <code>value</code> and <code>currency = USD</code>, then calls Firebase&#39;s logging API. The callback itself does not confirm delivery to Firebase. This callback is not an automatic mirror of all cgSDK analytics. Likewise, <code>CgSdkAdjust.TriggerCustomEvent()</code> forwards a custom event string to native Adjust integration; the C# facade contains no independent Adjust upload queue. <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/GameCallbacks.cs" title="Source line 92">Firebase callback</a> · <a href="../MergeFever/Assets/CoreGameSDK/AdsController.cs" title="Source line 74">Game callback handler</a> · <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/CgSdkAdjust.cs" title="Source line 16">Adjust facade</a></p>
+<h2 id="section-34">11 Ad handling by format</h2>
+<h3 id="section-35">Mediation initialization and ownership</h3>
+<p><code>AdsNative</code> exposes four formats: banner, interstitial, rewarded video, and app-open. These are the formats available through this Unity facade; it has no separate native-ad, MREC, or rewarded-interstitial API. The word <strong>native</strong> in <code>AdsNative</code> refers to the platform bridge, not a native-ad format. <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/AdsNative.cs" title="Source line 16">Public ad API</a></p>
+<p>Mediation has its own initialization entry point, <code>InitialiseMediationSDK(installTimestamp, testMode)</code>, and completion event, <code>OnMediationSdkInitialised</code>. Android forwards the timestamp and test-mode flag as JSON to <code>com.ads.sdk.ads.Mediation</code>; iOS passes a callback delegate and test-mode flag, without that timestamp argument. The game&#39;s <code>AdsController.Initialize()</code> subscribes before calling this entry point and gates its ad methods on mediation completion. In the Editor, that game adapter marks itself initialized without native mediation. Core SDK identity initialization described in section 3 is a separate callback path. <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Platform/Android/AdsNativeAndroid.cs" title="Source line 22">Android bridge</a> · <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Platform/iOS/AdsNativeIOS.cs" title="Source line 13">iOS bridge</a> · <a href="../MergeFever/Assets/CoreGameSDK/AdsController.cs" title="Source line 45">Game mediation initialization</a></p>
+<p>The visible C# API has no explicit load, preload, destroy, retry, network-selection, ad-unit-selection, or per-request placement argument. Availability and show requests cross into native mediation. Consequently, waterfall/bidding behavior, automatic reloads, retry delays, native frequency caps, and network-specific failure details cannot be established from this C# source. A returned show boolean is not proof of a displayed impression or earned reward; later callbacks carry those lifecycle signals.</p>
+<h3 id="section-36">Format and callback reference</h3>
+<p>All methods below belong to <code>AdsNative.Instance</code>; events belong to <code>AdsNativeCallbacks.Instance</code>.</p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>Format</th>
+<th>Request and readiness API</th>
+<th>Exposed lifecycle events</th>
+<th>Important limitation</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Banner</td>
+<td><code>ShowBannerAd()</code>, <code>HideBannerAd()</code></td>
+<td><code>OnBannerAdLoaded</code>, <code>OnBannerAdClicked</code></td>
+<td>No readiness query, hidden callback, or load/display-failure callback in this facade</td>
+</tr>
+<tr>
+<td>Interstitial</td>
+<td><code>IsInterstitialAdAvailable()</code>, <code>ShowInterstitialAd()</code></td>
+<td><code>OnInterstitialAdAvailable</code>, <code>OnInterstitialAdUnAvailable</code>, <code>OnInterstitialAdClicked</code>, <code>OnInterstitialAdDisplayed</code>, <code>OnInterstitialAdDisplayFailed</code>, <code>OnInterstitialAdHidden</code></td>
+<td>Failure event has no error payload; hidden event has no reward flag</td>
+</tr>
+<tr>
+<td>Rewarded video</td>
+<td><code>IsRewardedVideoAdAvailable()</code>, <code>ShowRewardedVideoAd()</code></td>
+<td><code>OnVideoAdAvailable</code>, <code>OnVideoAdUnAvailable</code>, <code>OnVideoAdClicked</code>, <code>OnVideoAdDisplayed</code>, <code>OnVideoAdDisplayFailed</code>, <code>OnVideoAdHidden(bool grantReward)</code></td>
+<td>Reward eligibility comes from the hidden callback&#39;s boolean</td>
+</tr>
+<tr>
+<td>App-open</td>
+<td><code>IsAppOpenAdAvailable()</code>, <code>ShowAppOpenAd()</code></td>
+<td><code>OnAppOpenAdLoaded</code>, <code>OnAppOpenAdClicked</code>, <code>OnAppOpenAdDisplayed</code>, <code>OnAppOpenAdDisplayFailed</code>, <code>OnAppOpenAdHidden</code></td>
+<td>No game resume/display policy is implemented by this facade</td>
+</tr>
+</tbody></table></div>
+<p>The show/hide/readiness methods return booleans. Android bridge methods catch and log exceptions and return false; most corresponding iOS ad operations call imported functions directly without those catches. Unsupported platform paths fall through to false. The game adapter discards the boolean returned by show/hide calls, so it relies on subsequent callbacks rather than propagating immediate refusal to its callers. <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/AdsNative.cs" title="Source line 16">API and returns</a> · <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Platform/Android/AdsNativeAndroid.cs" title="Source line 22">Platform error handling</a> · <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Platform/iOS/AdsNativeIOS.cs" title="Source line 13">iOS operations</a> · <a href="../MergeFever/Assets/CoreGameSDK/AdsController.cs" title="Source line 89">Game show wrappers</a> · <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/AdsNativeCallbacks.cs" title="Source line 19">Event declarations</a></p>
+<h3 id="section-37">Banner behavior</h3>
+<p>Banner visibility is requested through show/hide calls; sizing, screen position, refresh timing, and disposal are not configurable through this facade. The game forwards visibility through <code>BannerAdType</code> and <code>AdsController</code>, with the latter ignoring requests until mediation is initialized. The game banner gate also checks development configuration, game eligibility, and remove-ads ownership. Its loaded handler emits both Loaded and Show analytics; the SDK&#39;s loaded callback is a load signal, not an explicit displayed-impression callback. Revenue-based banner counts are covered below. <a href="../MergeFever/Assets/Tag/MergeGame/CoreGame/Scripts/GoogleAdmob/BannerAdType.cs" title="Source line 45">Banner game integration</a> · <a href="../MergeFever/Assets/Tag/MergeGame/CoreGame/Scripts/GoogleAdmob/GameAdManager.cs" title="Source line 9">Outer game ad gates</a> · <a href="../MergeFever/Assets/CoreGameSDK/AdsController.cs" title="Source line 89">Game initialization gate</a></p>
+<h3 id="section-38">Interstitial behavior and game-owned cooldowns</h3>
+<p>Native mediation reports interstitial availability through <code>HandleAdPlacementAvailability</code>; the C# callback dispatches available or unavailable without an error code. The game keeps an availability flag, resets it when requesting an ad, and updates it from those events. The outer game manager rejects unavailable interstitials and disables them for remove-ads owners. Initialization also applies a calendar-day waiting period and first-session delay. The show path applies tutorial checks, an unlock level, enabled placement triggers, and a cooldown flag. Its runtime configuration comes from <code>game_it_ads_cd</code>, described in section 4; payer/nonpayer decisions are explicitly delegated to the SDK by the integration comment. <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/AdsNativeCallbacks.cs" title="Source line 100">Availability dispatch</a> · <a href="../MergeFever/Assets/Tag/MergeGame/CoreGame/Scripts/GoogleAdmob/InterstitialAd.cs" title="Source line 87">Game show checks</a> · <a href="../MergeFever/Assets/Tag/MergeGame/CoreGame/Scripts/GoogleAdmob/InterstitialAd.cs" title="Source line 69">Initial delay</a> · <a href="../MergeFever/Assets/Tag/MergeGame/CoreGame/Scripts/GoogleAdmob/GameAdManager.cs" title="Source line 9">Outer game gates</a> · <a href="../MergeFever/Assets/Tag/MergeGame/CoreGame/Scripts/GoogleAdmob/InterstitialAd.cs" title="Source line 122">Eligibility</a></p>
+<p>The game maps <code>META_IT</code>, <code>OUT_OF_ENERGY_IT</code>, <code>ORDER_SERVE_IT</code>, and <code>ON_LEVEL_COMPLETE_IT</code> to configured trigger flags. These names describe game locations and analytics context; the native show call receives no placement string. After completion <strong>or display failure</strong>, the attached game action starts <code>delayBetweenInterstitialAds</code>. Closing a rewarded ad starts the separate <code>delayBetweenRewardedVideoAndInterstitial</code> timer. These timers belong to the game; they do not document native mediation&#39;s own caps. <a href="../MergeFever/Assets/Tag/MergeGame/CoreGame/Scripts/GoogleAdmob/InterstitialAd.cs" title="Source line 134">Game triggers and cooldowns</a> · <a href="../MergeFever/Assets/Tag/MergeGame/CoreGame/Scripts/GoogleAdmob/RewardedAd.cs" title="Source line 101">Rewarded close handling</a></p>
+<p>If configured with an ad-break reward, the game shows its popup and delays the show request by one second. It attaches the popup&#39;s success action to interstitial completion, which runs on <code>OnInterstitialAdHidden</code>. This is a game-owned reward policy: cgSDK&#39;s interstitial hidden callback supplies no completion/reward boolean. The game also emits analytics labels such as <code>RewardReceived</code> from this path; those labels do not turn the SDK format into rewarded video. <a href="../MergeFever/Assets/Tag/MergeGame/CoreGame/Scripts/GoogleAdmob/InterstitialAd.cs" title="Source line 87">Interstitial request</a> · <a href="../MergeFever/Assets/Tag/MergeGame/CoreGame/Scripts/GoogleAdmob/InterstitialAd.cs" title="Source line 194">Interstitial close/failure</a></p>
+<h3 id="section-39">Rewarded video and reward delivery</h3>
+<p>The SDK forwards the native <code>grantReward</code> result through <code>OnVideoAdHidden(bool)</code>. Android receives a boolean; iOS reads the first <code>#</code>-separated field and treats exactly <code>&quot;1&quot;</code> as true. C# does not calculate eligibility, reward quantity, or reward type. It supplies no separate public reward-earned event, transaction identifier, or reward deduplication mechanism in these handlers. <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/AdsNativeCallbacks.cs" title="Source line 195">Reward callback</a> · <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Platform/Android/AdsNativeCallbacksAndroid.cs" title="Source line 21">Android callback adapter</a> · <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Platform/iOS/AdsNativeCallbacksIOS.cs" title="Source line 22">iOS callback decoding</a></p>
+<p>The game stores the pending <code>RewardAdData</code>, clears its availability flag, and calls the SDK show method. On device, <code>OnVideoAdHidden(true)</code> calls <code>GrantReward()</code>, which invokes that request&#39;s <code>adCompletedAction</code>; false closes the flow without that completion action. <code>OnVideoAdDisplayFailed</code> invokes <code>adFailedAction</code>. The Editor shortcut calls completion immediately and therefore does not validate the device reward flow. <a href="../MergeFever/Assets/Tag/MergeGame/CoreGame/Scripts/GoogleAdmob/RewardedAd.cs" title="Source line 58">Rewarded request</a> · <a href="../MergeFever/Assets/Tag/MergeGame/CoreGame/Scripts/GoogleAdmob/RewardedAd.cs" title="Source line 101">Rewarded callbacks and grant</a></p>
+<p>This shortened excerpt preserves the key SDK-to-game decision; logging and other game side effects are omitted:</p>
+<pre><code class="language-csharp">private void OnVideoAdHidden(bool grantReward)
+{
+    if (grantReward)
+    {
+        OnVideoAdGrantReward();
+        GrantReward();
+    }
+    // The full game handler also closes UI and starts the interstitial delay.
+}
+</code></pre>
+<p>Neither a show request nor <code>OnVideoAdDisplayed</code> grants the reward. However, the game logs one displayed event and increments its rewarded-ad counter at request time, before the native displayed callback. Those particular game metrics should not be interpreted as confirmed SDK impressions. The pending request is a single field and is not cleared after reward delivery; these handlers do not protect against overlapping requests or duplicate reward-bearing callbacks. This is a source-level limitation, not evidence that native mediation emits duplicates. <a href="../MergeFever/Assets/Tag/MergeGame/CoreGame/Scripts/GoogleAdmob/RewardedAd.cs" title="Source line 58">Request-time metrics</a> · <a href="../MergeFever/Assets/Tag/MergeGame/CoreGame/Scripts/GoogleAdmob/RewardedAd.cs" title="Source line 101">Reward handling</a></p>
+<h3 id="section-40">App-open ads</h3>
+<p>App-open support is present on both platform bridges, including readiness, show, and lifecycle callbacks. No cgSDK app-open call or subscription was found in the inspected game C#; unrelated GameAnalytics integration types mentioning app-open do not establish use of cgSDK&#39;s API. The facade does not automatically show an ad on launch/resume, choose a foreground timing policy, or coordinate app-open versus other full-screen formats. Any automatic behavior inside the compiled native SDK remains unverified. <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/AdsNative.cs" title="Source line 16">App-open API</a> · <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/AdsNativeCallbacks.cs" title="Source line 19">App-open callbacks</a></p>
+<h3 id="section-41">Callback threading, failures, and revenue</h3>
+<p>The common lifecycle handlers schedule their events through <code>MainThreadExecutor</code>, including availability, displayed, failed, hidden, and rewarded-hidden callbacks. <code>HandleAdRevenueReceived</code> is an exception: it updates tracking and invokes its public event directly, with no explicit main-thread dispatch there. Android and iOS adapters call that handler directly, so its calling thread cannot be guaranteed from this C# layer alone. <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/AdsNativeCallbacks.cs" title="Source line 100">Lifecycle dispatch</a> · <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/AdsNativeCallbacks.cs" title="Source line 54">Revenue handler</a> · <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Platform/Android/AdsNativeCallbacksAndroid.cs" title="Source line 21">Platform callbacks</a> · <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Platform/iOS/AdsNativeCallbacksIOS.cs" title="Source line 22">iOS adapter</a></p>
+<p>Unavailable notifications are booleans about availability, not detailed load-failure reports. The game labels them as failed-to-load analytics events, but the SDK event does not establish the reason. Display failures also contain no error code/message. The visible C# handlers do not retry a failed show; loading/retry policy remains native-owned. Because the game discards show-return booleans, a false return without a later failure callback would not reach its failure action through this adapter. Native callback guarantees need device verification. <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/AdsNativeCallbacks.cs" title="Source line 100">Availability event</a> · <a href="../MergeFever/Assets/CoreGameSDK/AdsController.cs" title="Source line 89">Game adapter</a></p>
+<p>Revenue callbacks increment the summary counters in section 10 for <code>banner</code>, <code>interstitial</code>, and <code>rewarded_video</code>. There is no app-open case in that C# switch. A callback for another placement can still reach <code>OnAdRevenueReceived</code> and optional GameAnalytics forwarding, but it does not increment those format-specific summary counters. The public revenue event exposes platform, source, format, ad-unit name, value, and currency; it omits the incoming <code>adPlacement</code>, native arguments, and SDK version. This is distinct from game logs emitted at request/display/close time. <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/AdsNativeCallbacks.cs" title="Source line 54">Revenue mapping</a></p>
+<h3 id="section-42">Consent and diagnostics</h3>
+<p><code>ShouldShowGdprConsentDialog()</code> queries native code, <code>ShowGdprConsentDialog()</code> asks it to display the dialog, and <code>ShowMediationDebugger()</code> opens native diagnostics outside the Editor. The facade does not expose a consent-result event or demonstrate that consent gates every ad request. The game has a direct dialog wrapper. These methods establish available controls, not the full native consent workflow. <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/AdsNative.cs" title="Source line 16">Public controls</a> · <a href="../MergeFever/Assets/CoreGameSDK/AdsController.cs" title="Source line 32">Game dialog wrapper</a></p>
+<h2 id="section-43">12 Puzzle Master framework</h2>
+<p>Puzzle Master is a stateful goal-and-reward module implemented partly in C#, unlike the runtime/experiment facades. Native code supplies the day&#39;s timestamp, FTUE flag, total progress, current-goal progress/index, and goals. Each goal has <code>Target</code>, opaque <code>Reward</code>, <code>UIReveal</code>, and <code>ClaimStatus</code>; statuses are 0 (not ready), 1 (ready to claim), and 2 (claimed). Native payloads use <code>&amp;</code> between goals and <code>@</code> between each goal&#39;s four fields. The callback replaces the current list and treats a nonnegative current-goal index as started. Malformed short goal entries are skipped; integer parsing falls back to zero. <code>GetGoalsData()</code> returns the mutable list, not a copy. <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Impl/PuzzleMaster/CgSdkPuzzleMaster.cs" title="Source line 261">State loading</a> · <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Supplemental/CgSdkConstants.cs" title="Source line 14">Status constants</a></p>
+<p><code>HandlePuzzleMasterProgressUpdate(increment)</code> does nothing until started. Otherwise it adds to total progress, fills the current goal, carries surplus into following goals, and marks each crossed goal ready to claim. Each crossed goal sends the updated progress/index and <code>&amp;</code>-joined claim statuses to native code. The method does not reject negative increments. The score-bearing <code>LevelNative.OnLevelComplete</code> overload calls this method, but the inspected game also feeds merge-task values directly, after applying a game-owned booster multiplier. Avoid double-submitting the same earned progress when integrating both routes. <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Impl/PuzzleMaster/CgSdkPuzzleMaster.cs" title="Source line 190">Progress algorithm</a> · <a href="../MergeFever/Assets/Tag/MergeGame/Features/PuzzleMaster/Scripts/PuzzleMasterManager.cs" title="Source line 137">Merge integration</a></p>
+<p>The SDK separates goal completion from granting a reward. <code>OnGoalClaimed(goalId)</code> marks an in-range goal claimed, but does not check that it was ready, deliver currency/items, or immediately send the claim to native. The game&#39;s <code>OnGoalClaim()</code> grants its parsed reward first and then calls this SDK method. The game owns reward parsing and actual inventory changes. <code>OnPuzzleMasterScreenClosed()</code> forwards the complete progress/claim snapshot; <code>SdkManager.OnPause()</code> calls internal <code>SaveData()</code>, which also forwards a snapshot to native. There is no C# disk/PlayerPrefs store for this module, so native persistence durability cannot be inferred here. <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Impl/PuzzleMaster/CgSdkPuzzleMaster.cs" title="Source line 145">Claim and screen calls</a> · <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Impl/PuzzleMaster/CgSdkPuzzleMaster.cs" title="Source line 240">Save bridge</a> · <a href="../MergeFever/Assets/Tag/MergeGame/Features/PuzzleMaster/Scripts/PuzzleMasterManager.cs" title="Source line 248">Game claim ordering</a></p>
+<p><code>OnPuzzleMasterFtueViewed()</code> clears the local FTUE flag and notifies native. <code>OnPuzzleMasterScreenViewed()</code> clears auto-trigger and notifies native. The day timestamp is exposed for the game to interpret; this C# module does not itself run a midnight-expiry timer. Native auto-trigger callbacks set a flag for the game to check. Android and iOS both provide Puzzle Master bridges; the iOS callback adapter decodes six pipe-separated fields before loading state. No dedicated Editor simulator is present in the facade. <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Impl/PuzzleMaster/CgSdkPuzzleMaster.cs" title="Source line 90">View calls</a> · <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Platform/iOS/CgSdkGameCallbacksIOS.cs" title="Source line 34">iOS callback decoding</a></p>
+<p>For expiry, native sends reward strings. C# sets <code>ShouldGrantRewardsOnExpiry</code> true and schedules <code>GrantRewardsAndReset(string[])</code> on the Unity main-thread executor. Nonempty data splits on <code>&amp;</code>; empty data becomes a one-element array containing an empty string. The SDK event does not itself grant rewards or reset all progress. <code>MarkRewardsGrantedOnExpiry()</code> only clears the local flag. The game waits for managers, parses rewards, adds them to inventory, clears this flag when parsed rewards exist, and reinitializes its UI. Its empty/unparseable reward branch does not clear the SDK flag, which can leave its subsequent initialization blocked by that flag. Treat this as a source-level edge case, not a reproduced device failure. <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Impl/PuzzleMaster/CgSdkPuzzleMaster.cs" title="Source line 303">Expiry callback</a> · <a href="../MergeFever/Assets/Tag/MergeGame/Features/PuzzleMaster/Scripts/PuzzleMasterManager.cs" title="Source line 360">Game expiry flow</a></p>
+<h2 id="section-44">13 Leaderboard framework</h2>
+<p><code>CgSdkLeaderBoard</code> is an event-driven facade. Native callbacks mark the feature enabled for the user and move the in-memory status through ready (0), running (1), ended (2), and expired (3). The enabled flag starts false and is only set true by the visible methods; there is no visible disable/reset-to-false operation. Neither flag nor status is persisted by this C# facade. Android has actual native forwarding; iOS branches for its public game calls are <code>TO BE ADDED</code>, and the inspected iOS game-callback switch has no leaderboard cases. Do not infer iOS support from the shared class existing. <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Impl/LeaderBoard/CgSdkLeaderBoard.cs" title="Source line 181">Public API</a> · <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Impl/LeaderBoard/CgSdkLeaderBoard.cs" title="Source line 271">Callback state</a> · <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Supplemental/CgSdkConstants.cs" title="Source line 14">Constants</a></p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>Callback</th>
+<th>Data and intended game action</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>OnAskToStartLeaderboard</code></td>
+<td>Leaderboard ID; the game can call <code>StartLeaderboard()</code></td>
+</tr>
+<tr>
+<td><code>OnLeaderboardReadyToStartStatusReceived</code></td>
+<td>ID and time-to-start; display pre-start state</td>
+</tr>
+<tr>
+<td><code>OnLeaderboardRunningStatusReceived</code></td>
+<td>ID, remaining time, players, prize table, gift-display flag, auto-trigger flag</td>
+</tr>
+<tr>
+<td><code>OnLeaderboardRewardReceived</code></td>
+<td>Final players/prize table, player&#39;s reward list, and force-show flag</td>
+</tr>
+<tr>
+<td><code>OnLeaderboardEndStatusReceived</code></td>
+<td>ID-only no-reward end signal</td>
+</tr>
+<tr>
+<td><code>OnLeaderboardEndStatusWithDataReceived</code></td>
+<td>Additional no-reward final standings/prize table</td>
+</tr>
+<tr>
+<td><code>OnLeaderboardExpiryStatusReceived</code></td>
+<td>ID and optional remaining rewards, or null</td>
+</tr>
+</tbody></table></div>
+<p>Callbacks are delivered through <code>MainThreadExecutor</code>. The facade parses native strings: players are <code>#</code>-separated <code>id_progress</code> pairs and native ID <code>0</code> maps to <code>user</code>; prize groups split on <code>&amp;</code>, prizes within a group on <code>^</code>, and type/quantity on <code>_</code>; the player&#39;s granted reward list uses <code>#</code>. It preserves incoming player order rather than sorting rankings locally. Malformed array shapes or integer quantities can throw; handlers log and can suppress the parsed-data event. <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Impl/LeaderBoard/CgSdkLeaderBoard.cs" title="Source line 296">Running parsing</a> · <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Impl/LeaderBoard/CgSdkLeaderBoard.cs" title="Source line 350">End parsing</a></p>
+<p><code>StartLeaderboard</code>, <code>OnLeaderboardScreenViewed</code>, <code>ForceFetchLeaderboardStatus</code>, <code>OnLeaderboardScoreUpdate</code>, <code>OnLeaderboardEndFlowCompletedInGame(rewardGranted)</code>, and <code>OnLeaderboardResetDoneByGame</code> are the game-facing commands. Score update is documented as a delta that triggers refresh, and the game sends increments. Matching, competitor generation, authoritative ranking, reward eligibility, scheduling, and native save behavior are not implemented in this facade. <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Impl/LeaderBoard/CgSdkLeaderBoard.cs" title="Source line 181">Commands</a> · <a href="../MergeFever/Assets/Tag/MergeGame/Features/NewLeaderBoard/Scripts/CgSdkLBManager.cs" title="Source line 575">Game score submission</a></p>
+<p>End and expiry handlers suppress repeats using the single current status, not an event ID or per-leaderboard durable record. They set that status before parsing. A malformed reward payload can therefore fail delivery and leave a repeated same-status callback suppressed. On the no-reward end path, the legacy ID-only callback is deliberately queued before parsing, so it survives malformed standings/prizes; the richer end callback still depends on successful parsing. The game&#39;s completion acknowledgment should occur after its end UI flow, because the source contract warns that earlier acknowledgment clears native end data prematurely. Expiry supersedes a deferred end reward flow. <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Impl/LeaderBoard/CgSdkLeaderBoard.cs" title="Source line 350">End processing and contract</a> · <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Impl/LeaderBoard/CgSdkLeaderBoard.cs" title="Source line 424">Expiry processing</a></p>
+<p>The game&#39;s <code>CgSdkLBManager</code> subscribes to the older ID-only end event but not <code>OnLeaderboardEndStatusWithDataReceived</code>; thus the new final-data callback is not consumed by this integration. It maintains a UI snapshot, maps reward IDs into game items, performs actual reward grants, and persists game-owned score/profile data under <code>LB_Saved_{leaderboardId}</code>. These game records are not the SDK&#39;s authoritative leaderboard store. <a href="../MergeFever/Assets/Tag/MergeGame/Features/NewLeaderBoard/Scripts/CgSdkLBManager.cs" title="Source line 72">Game subscriptions</a> · <a href="../MergeFever/Assets/Tag/MergeGame/Features/NewLeaderBoard/Scripts/CgSdkLBManager.cs" title="Source line 625">Game persistence</a></p>
+<p>Editor support loads <code>Resources/CoreGameSDK/CgSdkLeaderboardConfig</code> and offers trigger methods for ask, ready, running, end, and expiry. <code>StartLeaderboard()</code> directly triggers the configured running callback. These helpers bypass native allocation/network behavior; notably, the Editor no-reward end helper fires only the legacy ID event, not the richer final-data event, so its behavior is not fully identical to the device callback path. <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Impl/LeaderBoard/CgSdkLeaderBoard.cs" title="Source line 63">Editor simulator</a></p>
+<h2 id="section-45">14 Daily Puzzle retrieval</h2>
+<p><code>CgSdkDailyPuzzle.GetDailyPuzzle(useUtc)</code> computes today&#39;s <code>yyyyMMdd</code> using UTC or the device&#39;s local date. If PlayerPrefs contains matching <code>CGSdk_DailyPuzzleDate</code> and nonempty <code>CGSdk_DailyPuzzleData</code>, it returns the saved string without contacting native code. Otherwise Android calls <code>com.ads.sdk.impl.content.DailyPuzzle.getDailyPuzzleData(useUtc)</code>. The Android bridge logs exceptions and returns an empty string. The iOS retrieval branch is unimplemented and leaves the result empty. <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Impl/DailyPuzzle/CgSdkDailyPuzzle.cs" title="Source line 27">Daily retrieval</a> · <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Platform/Android/CgSdkDailyPuzzleAndroid.cs" title="Source line 21">Android bridge</a> · <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Supplemental/Util.cs" title="Source line 26">Date calculation</a></p>
+<p>Every attempted fetch saves its date and payload through PlayerPrefs, but does not explicitly call <code>PlayerPrefs.Save()</code>. Empty payloads are not reused by the hit condition, so another call retries. A valid same-date payload has no C# refresh/invalidation API. The cache key does not include <code>useUtc</code>; switching modes when both resolve to the same date can reuse the earlier mode&#39;s payload. The SDK returns opaque content and does not implement a game UI, reward flow, or completion tracker here.</p>
+<p>In the Editor it loads <code>Resources/CoreGameSDK/CgSdkDailyPuzzleConfig</code> and returns <code>puzzleData</code>. Missing configuration is dereferenced without a null guard. The same PlayerPrefs cache check happens first, so a previous same-day cached value can hide edits to the Editor asset. No <code>CgSdkDailyPuzzle</code> calls were found under the live game&#39;s C# assets; this is a package capability, not evidence of an enabled game feature. <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Impl/DailyPuzzle/CgSdkDailyPuzzle.cs" title="Source line 27">Daily retrieval</a></p>
+<h2 id="section-46">15 Purchase-reporting contract</h2>
+<p><code>IapNative.SendPurchaseInfoVerified</code> reports a purchase already confirmed by the platform store; it does not initiate a purchase, grant an entitlement, restore purchases, or return a verification decision. The method and both platform adapters return void. Its documentation asks callers to report once after store confirmation. C# supplies no deduplication, durable retry queue, success/failure event, or receipt-verification result. As noted in section 10, local revenue increments precede native processing. <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/IapNative.cs" title="Source line 25">Purchase entry point</a> · <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Platform/Android/IapNativeAndroid.cs" title="Source line 34">Android purchase bridge</a> · <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Platform/iOS/IapNativeIOS.cs" title="Source line 24">iOS purchase bridge</a></p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>Argument</th>
+<th>Documented contract</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>dollarValue</td>
+<td>USD amount as string; used for internal summary revenue</td>
+</tr>
+<tr>
+<td>currency</td>
+<td>Store-reported currency code</td>
+</tr>
+<tr>
+<td>productId</td>
+<td>Product/SKU identifier</td>
+</tr>
+<tr>
+<td>storeIdentifier</td>
+<td>Android Play purchase token; iOS App Store transaction identifier</td>
+</tr>
+<tr>
+<td>orderId</td>
+<td>Android order ID, distinct from purchase token; empty on iOS</td>
+</tr>
+<tr>
+<td>localPrice</td>
+<td>Local-currency amount as string</td>
+</tr>
+<tr>
+<td>localCurrencyCode</td>
+<td>Local currency code</td>
+</tr>
+</tbody></table></div>
+<p>Both price strings are parsed through <code>StringParseToDataType.ParseGameSuppliedCurrencyToDouble</code>: remove characters other than digits, dot, comma, minus; replace every comma with dot; parse <code>NumberStyles.Float</code> under invariant culture; log and return zero on failure. Thus <code>1,99</code> and <code>$1,99</code> work, but this is not general locale-aware currency parsing: mixed thousands and decimal separators can become an invalid multiple-dot string. Exponent letters are removed rather than interpreted. The parser does not explicitly reject negative or nonfinite parsed results. <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Supplemental/Util.cs" title="Source line 90">Currency parser</a></p>
+<p>The API comments specify rejecting nonpositive/nonfinite local prices and trimming/uppercasing local currency on the receiving native side. <strong>Those checks do not execute in the visible C# facade or platform bridges</strong>. Do not describe them as verified C# validation: they are the documented downstream contract. Android calls <code>com.ads.sdk.iap.IapBridge.submitIapForVerification</code> with seven positional arguments; iOS imports <code>submitIapForVerification</code> with the same seven argument types. Both bridge methods catch/log exceptions without reporting failure to the game. Comments mention Adjust verification and KMP signaling, but the native implementation is compiled, so those downstream actions are not independently verified here.</p>
+<p>Game example: <code>IAPManager.OnPurchaseConfirmed(ConfirmedOrder)</code> generates purchase receipt data, obtains store metadata, and calls <code>IapController.SendPurchaseInfo</code>, which forwards to cgSDK. It supplies the game&#39;s configured <code>GetDefaultPrice(productId)</code> as the USD value and literal <code>USD</code>; local price/currency come from metadata. This is a configured USD price, not an exchange-rate conversion performed by cgSDK. <code>IapController</code> logs the complete argument set, including store identifiers, before forwarding; report no actual identifiers.</p>
+<p>The inspected game&#39;s <code>GeneratePurchaseReceipt</code> unconditionally calls Google-Play-shaped receipt extraction. It assigns <code>order.Info.TransactionID</code> to a separate <code>purchaseToken</code> field, but the cgSDK call passes <code>storeIdentifier</code>, extracted from Google receipt JSON. No corresponding iOS transaction-ID mapping is visible in this path. This is an integration mismatch to validate on iOS, not proof that a production iOS purchase has failed. <a href="../MergeFever/Assets/CoreGameSDK/IapController.cs" title="Source line 19">Game forwarding</a> · <a href="../MergeFever/Assets/Tag/Plugins/InAppPurchase/IAPManager.cs" title="Source line 458">Store confirmation</a> · <a href="../MergeFever/Assets/Tag/Plugins/InAppPurchase/IAPManager.cs" title="Source line 755">Receipt extraction</a> · <a href="../MergeFever/Assets/Tag/Plugins/InAppPurchase/IAPManager.cs" title="Source line 339">Configured USD price</a></p>
+<h2 id="section-47">16 Level and progression integration</h2>
+<p><code>LevelNative</code> coordinates managed analytics and native game progression signals. Its methods return void; they do not supply acknowledgments or persist their own outgoing request queue.</p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>Call</th>
+<th>Managed side effect</th>
+<th>Native forwarding</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>OnLevelStart(levelNum)</td>
+<td>Creates/updates tracking through TrackingBridge.OnLevelStart</td>
+<td>Android/iOS level start</td>
+</tr>
+<tr>
+<td>OnLevelComplete(levelNum, clearTimeInSeconds)</td>
+<td>TrackingBridge.OnLevelEnd(true, time)</td>
+<td>Android/iOS completion</td>
+</tr>
+<tr>
+<td>OnLevelComplete(levelNum, clearTimeInSeconds, score)</td>
+<td>Same successful tracking end, then Puzzle Master progress update using score</td>
+<td>Android three-argument onLevelComplete; iOS onLevelCompleteWithScore</td>
+</tr>
+<tr>
+<td>OnLevelFail(levelNum, timeInSeconds)</td>
+<td>TrackingBridge.OnLevelEnd(false, time)</td>
+<td>Android/iOS failure</td>
+</tr>
+<tr>
+<td>OnPowerUpUsed(powerUpName)</td>
+<td>No managed TrackingBridge call here</td>
+<td>Android only; visible iOS branch is empty</td>
+</tr>
+</tbody></table></div>
+<p>The score overload matters: a completion can both finish analytics and advance Puzzle Master. The overload without score does not make that managed Puzzle Master call. Managed end tracking receives success/time rather than the supplied level number; the native bridge receives the level number separately. The facade does not validate nonnegative durations/scores or enforce idempotency. Bridge methods catch/log native exceptions; earlier managed changes are not rolled back.</p>
+<p>The game&#39;s <code>PuzzleController</code> forwards start and the scored completion overload; <code>CoreGameSdkAnalyticsHandler</code> calls that adapter. No game <code>LevelNative.OnLevelFail</code> or <code>OnPowerUpUsed</code> call appeared in the searched C# usage. These are SDK APIs, but not demonstrated game flows in this project. <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/LevelNative.cs" title="Source line 18">Level facade</a> · <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Platform/Android/LevelNativeAndroid.cs" title="Source line 22">Android level bridge</a> · <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Platform/iOS/LevelNativeIOS.cs" title="Source line 19">iOS level bridge</a> · <a href="../MergeFever/Assets/CoreGameSDK/PuzzleController.cs" title="Source line 19">Game adapter</a></p>
+<h2 id="section-48">17 User information</h2>
+<p><code>CgSdkUser</code> is a small email helper, not a login/account-management system. <code>SetEmail(email)</code> assigns a private in-memory string and forwards it to native iOS only outside the Editor. Android has no forwarding branch. <code>GetEmail()</code> returns that stored field, initially empty; it does not query native storage. The wrapper performs no trim, validation, persistence, authentication, or success callback. Even if iOS forwarding throws and logs, the managed value remains assigned. No game call to this API was found under Assets in the inspected source. <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Supplemental/CgSdkUser.cs" title="Source line 21">User helper</a> · <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Platform/iOS/CgSdkUserIOS.cs" title="Source line 22">iOS forwarding</a></p>
+<h2 id="section-49">18 Installation, lifecycle wiring, and platform dependencies</h2>
+<h3 id="section-50">Dependency layers and versions</h3>
+<p><code>package.json</code> identifies cgSDK 1.54.8 and its private registry, but declares neither a Unity minimum version nor a UPM dependency map. The game pins cgSDK 1.54.8 and External Dependency Manager 1.2.186; its recorded Unity version is 6000.0.68f1. These are this project&#39;s versions, not a verified compatibility range. <a href="com.coregame.sdk-1.54.8/package.json" title="Source line 1">Package metadata</a> · <a href="../MergeFever/Packages/manifest.json" title="Source line 4">Game manifest</a> · <a href="../MergeFever/ProjectSettings/ProjectVersion.txt" title="Source line 1">Unity version</a></p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>Layer</th>
+<th>Included or declared version</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Android native libraries</td>
+<td><code>ads_sdk-1.48.8.aar</code>, <code>common-release-1.34.6.aar</code></td>
+</tr>
+<tr>
+<td>iOS native frameworks</td>
+<td><code>coregamesdk-1.26.6.xcframework</code>, <code>common-1.34.6.xcframework</code>, with device and simulator slices</td>
+</tr>
+<tr>
+<td>Android mediation examples</td>
+<td>AppLovin 13.0.1; IronSource 8.5.0</td>
+</tr>
+<tr>
+<td>iOS mediation examples</td>
+<td>AppLovinSDK 13.2.0; IronSource adapter 8.8.0.0.0</td>
+</tr>
+<tr>
+<td>Native attribution</td>
+<td>Android Adjust 5.6.1; iOS Adjust 5.6.2</td>
+</tr>
+<tr>
+<td>Native consent</td>
+<td>Android UMP 3.1.0; iOS GoogleUserMessagingPlatform 2.7.0</td>
+</tr>
+</tbody></table></div>
+<p>These component versions are separate from the Unity package version. <code>Mediation/Editor/Dependencies.xml</code> declares the Maven and CocoaPods dependencies, including ad-network adapters and supporting networking, serialization, and storage libraries. Commented entries are inactive. Declared dependencies, bundled iOS components, and the final resolved build graph are distinct; this report does not claim to have resolved a fresh build or verified which ad networks are active remotely. <a href="com.coregame.sdk-1.54.8/Mediation/Editor/Dependencies.xml" title="Source line 2">Dependency declarations</a> · <a href="README.md" title="Source line 35">Extraction inventory overview</a> · <a href="com.coregame.sdk-1.54.8/Mediation/Editor/PostBuildProcess.cs" title="Source line 16">Framework paths</a></p>
+<h3 id="section-51">Integration requirements</h3>
+<p>The following sequence is derived from the source and host project, not a tested clean-project installation recipe:</p>
+<ol>
+<li>Install the package using the configured registry or a supported local package arrangement. Preserve native plugins, metadata, resource files, licenses, and notices, and avoid duplicate native libraries.</li>
+<li>Resolve the Maven/CocoaPods dependencies through the host project&#39;s dependency tooling. The <code>Mediation.Scripts.asmdef</code> only names the assembly; it is not a dependency manifest.</li>
+<li>Supply <code>Resources/CoreGameSDK/CgSdkAndroidBuildConfig</code> or <code>CgSdkIOSBuildConfig</code>. Section 3 covers required identifiers and build-time configuration. Android prebuild updates <code>Assets/Plugins/Android/gradleTemplate.properties</code>; iOS postbuild configures the exported project and Ad Review.</li>
+<li>Supply Firebase Analytics on iOS. The packaged notices state that the binary calls Firebase but does not declare its pod. The iOS processor also documents dynamic CocoaPods linking as required for its dependency arrangement; this is a package-specific integration requirement.</li>
+<li>Wire SDK lifecycle, mediation initialization, and the required module callbacks. The copied game integration depends on other game systems and is not a standalone sample application.</li>
+<li>Build and test on each intended platform. Editor simulations do not validate native callbacks, linkage, purchase processing, or real competition state.</li>
+</ol>
+<p><a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Mediation.Scripts.asmdef" title="Source line 2">Assembly declaration</a> · <a href="com.coregame.sdk-1.54.8/Mediation/Editor/CgSdkAndroidConfigGenerator.cs" title="Source line 13">Android processor</a> · <a href="com.coregame.sdk-1.54.8/Mediation/Editor/PostBuildProcess.cs" title="Source line 16">iOS processor</a> · <a href="com.coregame.sdk-1.54.8/ThirdPartyNotices/README.md" title="Source line 1">Firebase prerequisite and notices</a></p>
+<p>The supplied notices request distributing relevant third-party license texts and distinguish embedded iOS components from Gradle-resolved Android dependencies. Preserve the SDK&#39;s license and notices when extracting or redistributing it. This records package instructions rather than independently auditing license compliance. <a href="com.coregame.sdk-1.54.8/ThirdPartyNotices/README.md" title="Source line 1">Packaged notices</a></p>
+<h3 id="section-52">Lifecycle and callback execution</h3>
+<p><code>SdkManager.OnAwake</code>, <code>OnPause</code>, and <code>OnResume</code> are explicit integration methods, not Unity&#39;s ordinary <code>Awake</code> and <code>OnApplicationPause</code> message names. The game&#39;s analytics handler forwards lifecycle events to them. Pause stops the periodic service, collects tracking, saves Puzzle Master, calls native pause, and saves main content. Resume updates tracking, restarts the periodic service, and calls native resume. <code>OnDestroy</code> stops the periodic service. Correct forwarding therefore affects feature persistence as well as analytics. <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/SdkManager.cs" title="Source line 97">SDK lifecycle</a> · <a href="../MergeFever/Assets/Tag/MergeGame/CoreGame/Scripts/Analytics/CoreGameSdkAnalyticsHandler.cs" title="Source line 231">Game forwarding</a></p>
+<p><code>MainThreadExecutor</code>, in <code>Supplemental/Util.cs</code>, queues actions under a lock and drains them in a persistent MonoBehaviour&#39;s <code>Update</code>, catching exceptions per action. These callbacks are deferred to Update rather than executed immediately. APIs that bypass this helper, such as ad-revenue handling, need separate thread analysis. Section 8 describes the periodic service&#39;s 60-second async delay. <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Supplemental/Util.cs" title="Source line 103">Main-thread executor</a></p>
+<h3 id="section-53">Platform capability summary</h3>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>API/module</th>
+<th>Android</th>
+<th>iOS</th>
+<th>Editor distinction</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Ads, runtime data, server experiments, historic metrics, main content/catalog</td>
+<td>Platform bridges present</td>
+<td>Platform bridges present</td>
+<td>Does not establish native behavior</td>
+</tr>
+<tr>
+<td>Puzzle Master</td>
+<td>Platform bridge present</td>
+<td>Platform bridge present</td>
+<td>No dedicated facade simulator</td>
+</tr>
+<tr>
+<td>Leaderboard</td>
+<td>Native commands/callbacks</td>
+<td>Public command branches unimplemented in this snapshot</td>
+<td>Config-driven simulation</td>
+</tr>
+<tr>
+<td>Daily Puzzle</td>
+<td>Native fetch</td>
+<td>Fetch branch unimplemented</td>
+<td>Config-driven payload plus shared local cache</td>
+</tr>
+<tr>
+<td>Level start/complete/fail</td>
+<td>Forwarded</td>
+<td>Forwarded</td>
+<td>Native behavior not validated</td>
+</tr>
+<tr>
+<td>Power-up notification</td>
+<td>Forwarded</td>
+<td>Empty branch</td>
+<td>No native validation</td>
+</tr>
+<tr>
+<td>User email forwarding</td>
+<td>No forwarding branch</td>
+<td>Forwarded outside Editor</td>
+<td>Memory assignment only</td>
+</tr>
+</tbody></table></div>
+<p>This table describes visible implementation paths, not successful device-test results. Module sections provide the relevant source references and limitations.</p>
+<h2 id="section-54">19 Persistence and refresh reference</h2>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>State</th>
+<th>Storage visible at this boundary</th>
+<th>Refresh or lifecycle</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Named runtime result</td>
+<td>Memory dictionary</td>
+<td>On a read, query native again if the cached result is at least 300 seconds old</td>
+</tr>
+<tr>
+<td>Server experiment result</td>
+<td>Memory dictionary</td>
+<td>On a read, query native again if the cached result is at least 300 seconds old</td>
+</tr>
+<tr>
+<td>Hardcoded experiment result</td>
+<td>Separate memory dictionary</td>
+<td>Updated by incoming assignment data; getter has no TTL</td>
+</tr>
+<tr>
+<td>Shared SDK identity</td>
+<td>PlayerPrefs</td>
+<td>Accepted init callback; one-shot guard applies</td>
+</tr>
+<tr>
+<td>Sampling thresholds</td>
+<td>Memory map</td>
+<td>Init optional field or tracking-fractions callback</td>
+</tr>
+<tr>
+<td>Live puzzle/session state</td>
+<td>PlayerPrefs</td>
+<td>Saved at lifecycle/tracking transitions</td>
+</tr>
+<tr>
+<td>Pending native summary batch</td>
+<td>C# memory string</td>
+<td>Threshold, forced collection, or pause handoff</td>
+</tr>
+<tr>
+<td>Managed custom-event queue</td>
+<td><code>cgsdk/trkuni.json</code></td>
+<td>Saved on enqueue and response cleanup; scheduled uploads</td>
+</tr>
+<tr>
+<td>Main-content data/path/cap</td>
+<td>PlayerPrefs plus memory</td>
+<td>Native deliveries, invalidation, capacity changes, restore/save</td>
+</tr>
+<tr>
+<td>Catalog item data</td>
+<td>Native cache; no C# storage shown</td>
+<td>Native freshness/persistence not exposed in facade</td>
+</tr>
+<tr>
+<td>Game debug experiment override</td>
+<td><code>ABTestPlayerData.json</code></td>
+<td>Explicit setter; takes priority over SDK lookup</td>
+</tr>
+<tr>
+<td>Puzzle Master progress/claims</td>
+<td>Memory; snapshots forwarded to native</td>
+<td>Native state callbacks, goal updates, screen close, and pause</td>
+</tr>
+<tr>
+<td>Leaderboard status/enabled flag</td>
+<td>Memory in SDK facade</td>
+<td>Native callbacks; game UI/profile storage is separate</td>
+</tr>
+<tr>
+<td>Daily Puzzle date/payload</td>
+<td>PlayerPrefs</td>
+<td>Same-date nonempty hit; otherwise fetch and write</td>
+</tr>
+<tr>
+<td>User email</td>
+<td>Memory</td>
+<td>Explicit setter; iOS native persistence not exposed</td>
+</tr>
+</tbody></table></div>
+<p>These layers can make a newly published setting take effect at different times. Native availability, the C# cache, and a consumer that has already applied a snapshot are separate stages. There is no universal &quot;refresh everything&quot; method demonstrated by these interfaces.</p>
+<h2 id="section-55">20 Source findings requiring care</h2>
+<p>The following conditions follow from the implementation. They are not fixes applied to the package, and they have not been reproduced against the backend or on a device.</p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>Finding</th>
+<th>Condition and consequence</th>
+<th>Evidence</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Fallback initialization can win permanently</td>
+<td>If fallback wins the one-shot guard, later native initialization is ignored; an empty user ID blocks managed uploads.</td>
+<td><a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/SdkManager.cs" title="Source line 139">Fallback</a>, <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/GameCallbacks.cs" title="Source line 26">guard</a></td>
+</tr>
+<tr>
+<td>Zero synced count clears the managed queue</td>
+<td>For a response with <code>s=true</code>, <code>a=sync</code>, <code>c=tracker</code>, and a non-null data object, <code>CleanSyncedTrackings</code> removes a prefix only when <code>0 &lt; sc &lt; currentQueueCount</code>; other values clear the whole queue. Zero or omitted <code>sc</code> can discard pending events. The count is not checked against the dispatched batch size.</td>
+<td><a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Track/api/CgSdkTracker.cs" title="Source line 270">Cleanup</a>, <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Track/api/CgSdkTracker.cs" title="Source line 400">response</a></td>
+</tr>
+<tr>
+<td>Managed queue file replacement has a loss window</td>
+<td>Save writes a temporary file, deletes the live file, then moves the temporary file. Interruption between delete and move leaves no live file; startup does not recover the temporary file. This is not an atomic replacement despite the comment.</td>
+<td><a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Track/api/CgSdkTracker.cs" title="Source line 295">Storage</a></td>
+</tr>
+<tr>
+<td>Native handoff is not acknowledged to C#</td>
+<td>A caught bridge error can lose pending summaries because the caller clears its unpersisted buffer.</td>
+<td><a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Track/TrackingBridge.cs" title="Source line 342">Collection</a>, <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Platform/Android/TrackerNativeAndroid.cs" title="Source line 21">bridge</a></td>
+</tr>
+<tr>
+<td>Custom events before queue initialization are dropped</td>
+<td>The queue&#39;s enqueue method returns when <code>_initDone</code> is false. A new-session callback can occur during bridge restore before managed queue initialization.</td>
+<td><a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Track/TrackingBridge.cs" title="Source line 40">Initialization order</a>, <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Track/api/CgSdkTracker.cs" title="Source line 130">enqueue gate</a></td>
+</tr>
+<tr>
+<td>Runtime/experiment fallback values can persist for five minutes</td>
+<td>Cached empty/control results delay recovery even when consumers retry rapidly.</td>
+<td><a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Supplemental/CgSdkRuntimes.cs" title="Source line 20">Runtime cache</a>, <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Supplemental/CgSdkExperiments.cs" title="Source line 34">experiment cache</a></td>
+</tr>
+<tr>
+<td>Code version is absent from experiment cache keys</td>
+<td>Changing <code>codeVersion</code> does not bypass the server-experiment cache; the hardcoded getter ignores it.</td>
+<td><a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Supplemental/CgSdkExperiments.cs" title="Source line 34">Experiment implementation</a>, <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Supplemental/CgSdkExperiments.cs" title="Source line 63">hardcoded getter</a></td>
+</tr>
+<tr>
+<td>Custom Parent field is not sanitized</td>
+<td>A colon or caret in <code>Parent</code> can disrupt positional encoding.</td>
+<td><a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Track/model/SharedTracker.cs" title="Source line 62">Shared event serialization</a></td>
+</tr>
+<tr>
+<td>Historical metric validation is limited</td>
+<td>Whitespace-only names and nonfinite numeric values are not rejected by this facade. Any invalid string field rejects the whole batch.</td>
+<td><a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Impl/HistoricData/CgSdkHistoricData.cs" title="Source line 157">Historic validation</a></td>
+</tr>
+<tr>
+<td>Main-content capacity is not strictly enforced per delivery</td>
+<td>A large delivery can leave more cached levels than the configured cap.</td>
+<td><a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Impl/MainContent/CgSdkMainContent.cs" title="Source line 532">Content trimming</a></td>
+</tr>
+</tbody></table></div>
+<p>These findings should be considered when interpreting missing events, delayed configuration changes, or differences between test installations. They do not establish the frequency of any issue in production.</p>
+<h2 id="section-56">21 Device validation plan</h2>
+<p>The following checks would validate runtime behavior beyond this source report. They have not been executed as part of report preparation.</p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>Area</th>
+<th>Check</th>
+<th>Useful observation</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Initialization</td>
+<td>Delay native initialization past five seconds on a fresh test install</td>
+<td>Which callback wins; whether user ID and optional assignments later update</td>
+</tr>
+<tr>
+<td>Experiments</td>
+<td>Read a known experiment repeatedly and after cache expiry</td>
+<td>Returned integer, cache timing, control/error behavior</td>
+</tr>
+<tr>
+<td>Code version</td>
+<td>Change only the code-version argument within the cache lifetime</td>
+<td>Whether the native API is called again</td>
+</tr>
+<tr>
+<td>Overrides</td>
+<td>Compare a clean test profile with one containing a debug override</td>
+<td>Whether game selection bypasses SDK assignment</td>
+</tr>
+<tr>
+<td>Runtime config</td>
+<td>Read a missing key, make native data available, then retry before/after expiry</td>
+<td>Empty-result caching and consumer reapplication behavior</td>
+</tr>
+<tr>
+<td>Sampling</td>
+<td>Use configured and unconfigured event names with known sampling inputs</td>
+<td>Whether events reach the managed queue</td>
+</tr>
+<tr>
+<td>Managed delivery</td>
+<td>Queue offline, restart, then restore connectivity</td>
+<td>Disk restoration, user-ID gate, batching, retries</td>
+</tr>
+<tr>
+<td>Acknowledgments</td>
+<td>Use a controlled response source with zero, partial, full, and oversized counts</td>
+<td>Queue cleanup for each response shape</td>
+</tr>
+<tr>
+<td>Pause and termination</td>
+<td>Compare graceful pause with abrupt termination</td>
+<td>Native-buffer loss window and managed-queue persistence</td>
+</tr>
+<tr>
+<td>Historic metrics</td>
+<td>Submit valid/invalid single and batched metrics on device</td>
+<td>Boundary validation and native receipt; segment evaluation needs separate backend evidence</td>
+</tr>
+<tr>
+<td>Main content</td>
+<td>Exercise cache miss, delivery, early invalidation, restart, and oversized delivery</td>
+<td>Null-return contract, callback behavior, persistence, cache trimming</td>
+</tr>
+<tr>
+<td>Ad lifecycle</td>
+<td>Exercise each format on Android/iOS with ready, unavailable, and failed-show states</td>
+<td>Show return versus callbacks, callback thread/order, reload behavior, app-open integration</td>
+</tr>
+<tr>
+<td>Reward delivery</td>
+<td>Complete, dismiss, and fail rewarded video; check duplicate callbacks and overlapping requests</td>
+<td>Reward granted only for the correct pending request and only once; Editor behavior differs</td>
+</tr>
+<tr>
+<td>Ad configuration and revenue</td>
+<td>Exercise interstitial triggers/cooldowns, banner visibility, consent controls, and revenue callbacks for each format</td>
+<td>Game versus native gating, impression counts, and app-open summary-counter coverage</td>
+</tr>
+<tr>
+<td>Puzzle Master</td>
+<td>Cross multiple goals, claim, pause/restart, and expire with empty/valid rewards</td>
+<td>Progress carryover, native persistence, one-time inventory grant, expiry flag clearing</td>
+</tr>
+<tr>
+<td>Leaderboard</td>
+<td>Exercise ready/running/end/expiry, malformed payloads, duplicate callbacks, and delayed acknowledgment</td>
+<td>Status suppression, final-data delivery, reward ordering, Editor/device differences</td>
+</tr>
+<tr>
+<td>Daily Puzzle</td>
+<td>Change date/time mode, retry empty data, edit Editor asset, and test iOS</td>
+<td>Cache reuse, missing config handling, unimplemented-platform behavior</td>
+</tr>
+<tr>
+<td>Purchases</td>
+<td>Report confirmed Android/iOS purchases with valid and malformed prices/identifiers</td>
+<td>Correct platform receipt mapping; documented native validation and reporting behavior</td>
+</tr>
+<tr>
+<td>Level and user APIs</td>
+<td>Compare scored/unscored completion and platform email/power-up calls</td>
+<td>No double progress increments; intended platform support</td>
+</tr>
+<tr>
+<td>Installation/lifecycle</td>
+<td>Resolve clean Android/iOS builds and exercise pause/resume repeatedly</td>
+<td>Native linking, Firebase prerequisite, callback dispatch, periodic restart</td>
+</tr>
+</tbody></table></div>
+<p>Native upload behavior, targeting criteria, assignment stickiness, and historical metric evaluation require native/backend evidence or controlled device observation. They should remain open questions rather than being inferred from facade names.</p>
+<h2 id="section-57">22 Primary code reading order</h2>
+<p>For configuration and experiments, start with <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Supplemental/CgSdkRuntimes.cs" title="Source line 20">CgSdkRuntimes</a> and <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Supplemental/CgSdkExperiments.cs" title="Source line 34">CgSdkExperiments</a>, then inspect the platform bridges. For segmentation inputs, read <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Impl/HistoricData/CgSdkHistoricData.cs" title="Source line 37">CgSdkHistoricData</a>; for content eligibility and delivery, read <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Impl/MainContent/CgSdkMainContent.cs" title="Source line 155">CgSdkMainContent</a>.</p>
+<p>For analytics, read <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/SdkManager.cs" title="Source line 77">SdkManager startup</a>, <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/GameCallbacks.cs" title="Source line 26">GameCallbacks initialization</a>, <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Track/TrackingBridge.cs" title="Source line 40">TrackingBridge</a>, <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Track/model/SharedTracker.cs" title="Source line 62">SharedTracker</a>, and <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Track/api/CgSdkTracker.cs" title="Source line 130">CgSdkTracker</a> in that order. This separates lifecycle, summary tracking, custom-event construction, sampling, and transport.</p>
+<p>For practical integration examples, read <a href="../MergeFever/Assets/Tag/Plugins/ABTest/Scripts/ABTestHandler.cs" title="Source line 58">ABTestHandler</a>, <a href="../MergeFever/Assets/Tag/MergeGame/Features/AdPass/Scripts/AdPassSdkRuntimeConfig.cs" title="Source line 65">AdPass runtime application</a>, <a href="../MergeFever/Assets/Tag/MergeGame/CoreGame/Scripts/GoogleAdmob/InterstitialAdSdkRuntimeConfig.cs" title="Source line 48">interstitial runtime application</a>, and <a href="../MergeFever/Assets/Tag/MergeGame/CoreGame/Scripts/Analytics/CoreGameSdkAnalyticsHandler.cs" title="Source line 457">CoreGameSdkAnalyticsHandler order tracking</a>.</p>
+<footer>Converted from <a href="CGSDK_TECHNICAL_REPORT.md">CGSDK_TECHNICAL_REPORT.md</a>. Source references open local project files; tooltips show the original line numbers. Keep this HTML in SDKExtract alongside the project folders for those links to work. No internet connection is required to read this report.</footer></main></div></body></html>
