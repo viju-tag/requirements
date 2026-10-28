@@ -2,8 +2,138 @@
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>cgSDK 1.54.8 — Technical and Integration Report</title>
 <style>
-:root{color-scheme:light;--ink:#172735;--muted:#526575;--accent:#075f78;--border:#d8e1e7;--paper:#fff;--background:#f2f5f7}*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:24px}body{margin:0;background:var(--background);color:var(--ink);font:16px/1.7 system-ui,-apple-system,"Segoe UI",sans-serif}a{color:var(--accent);text-decoration-thickness:1px;text-underline-offset:3px}a:hover{color:#003b50}a:focus-visible{outline:3px solid #e6a32f;outline-offset:4px}.layout{max-width:1540px;margin:auto;display:grid;grid-template-columns:285px minmax(0,1fr);gap:36px;padding:32px}nav{position:sticky;top:24px;align-self:start;max-height:calc(100vh - 48px);overflow:auto;padding:18px 12px 18px 0}nav strong{display:block;font-size:13px;letter-spacing:.12em;text-transform:uppercase;margin-bottom:14px;color:var(--muted)}nav ol{list-style:none;margin:0;padding:0}nav li{margin:0 0 9px}nav a{display:block;font-size:13px;line-height:1.45;text-decoration:none;padding:4px 8px;border-radius:5px}nav a:hover{background:#e1ebf0}main{overflow-wrap:anywhere;min-width:0;background:var(--paper);padding:44px 48px;border:1px solid var(--border);border-radius:12px;box-shadow:0 4px 24px #16384908}h1{font-size:34px;line-height:1.2;letter-spacing:-.025em;margin:0 0 28px}h2{font-size:25px;line-height:1.3;margin:54px 0 20px;padding-top:20px;border-top:2px solid var(--border)}h3{font-size:19px;line-height:1.4;margin:30px 0 12px}p{margin:14px 0}li{margin:8px 0}.table-scroll{overflow-x:auto;margin:24px 0;border:1px solid var(--border);border-radius:7px}table{border-collapse:collapse;width:100%;font-size:14px;line-height:1.55}th,td{text-align:left;vertical-align:top;padding:12px 14px;border-bottom:1px solid var(--border);min-width:130px}th{background:#eaf1f5;font-weight:650}tr:last-child td{border-bottom:0}tbody tr:nth-child(even){background:#f8fafb}code{font: .88em/1.55 Consolas,"Courier New",monospace;background:#eef3f6;padding:2px 4px;border-radius:3px;overflow-wrap:anywhere}pre{overflow:auto;background:#162b3b;color:#edf6fa;padding:20px;border-radius:7px;line-height:1.6}pre code{background:none;padding:0;color:inherit;overflow-wrap:normal}footer{border-top:1px solid var(--border);margin-top:40px;padding-top:18px;font-size:13px;color:var(--muted)}.skip{position:absolute;left:12px;top:-60px;background:white;padding:10px;z-index:10}.skip:focus{top:12px}@media(max-width:1000px){.layout{grid-template-columns:220px minmax(0,1fr);gap:20px;padding:20px}main{padding:30px 24px}}@media(max-width:720px){.layout{display:block;padding:12px}nav{position:static;max-height:280px;margin-bottom:20px;padding:14px}main{padding:26px 18px}h1{font-size:28px}h2{font-size:22px}}@media print{body{background:white;font-size:10pt}.layout{display:block;padding:0;max-width:none}nav,.skip{display:none}main{border:0;padding:0;box-shadow:none}h2,h3{break-after:avoid}h2{margin-top:24px}pre,tr{break-inside:avoid}.table-scroll{overflow:visible}table{font-size:8pt}th,td{min-width:0;padding:6px}a{color:inherit}pre{white-space:pre-wrap}footer{font-size:8pt}}
-</style></head><body><a class="skip" href="#report">Skip to report</a><div class="layout"><nav aria-label="Table of contents"><strong>cgSDK 1.54.8 · Contents</strong><ol><li><a href="#section-1">1 Scope and evidence</a></li><li><a href="#section-2">2 SDK components and responsibilities</a></li><li><a href="#section-3">3 Initialization and shared configuration</a></li><li><a href="#section-7">4 Runtime configuration framework</a></li><li><a href="#section-11">5 A/B test framework</a></li><li><a href="#section-16">6 Segmentation interfaces and boundaries</a></li><li><a href="#section-21">7 Content configuration and caching</a></li><li><a href="#section-24">8 Analytics state and native summary delivery</a></li><li><a href="#section-28">9 Custom analytics events and managed delivery</a></li><li><a href="#section-33">10 Purchase revenue and analytics callbacks</a></li><li><a href="#section-34">11 Ad handling by format</a></li><li><a href="#section-43">12 Puzzle Master framework</a></li><li><a href="#section-44">13 Leaderboard framework</a></li><li><a href="#section-45">14 Daily Puzzle retrieval</a></li><li><a href="#section-46">15 Purchase-reporting contract</a></li><li><a href="#section-47">16 Level and progression integration</a></li><li><a href="#section-48">17 User information</a></li><li><a href="#section-49">18 Installation, lifecycle wiring, and platform dependencies</a></li><li><a href="#section-54">19 Persistence and refresh reference</a></li><li><a href="#section-55">20 Source findings requiring care</a></li><li><a href="#section-56">21 Device validation plan</a></li><li><a href="#section-57">22 Primary code reading order</a></li></ol></nav><main id="report"><h1>cgSDK 1.54.8: Technical and Integration Report</h1>
+
+:root {
+  color-scheme: light;
+  --ink: #172735;
+  --muted: #526575;
+  --accent: #075f78;
+  --border: #d8e1e7;
+  --paper: #fff;
+  --background: #f2f5f7;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: 24px; }
+body {
+  margin: 0;
+  background: var(--background);
+  color: var(--ink);
+  font: 16px/1.7 system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+a:hover { color: #003b50; }
+a:focus-visible, summary:focus-visible, .table-scroll:focus-visible, pre:focus-visible {
+  outline: 3px solid #bd7900;
+  outline-offset: 3px;
+}
+a, summary { touch-action: manipulation; }
+.layout {
+  display: grid;
+  grid-template-columns: 250px minmax(0, 1fr);
+  gap: 24px;
+  max-width: 1540px;
+  margin: auto;
+  padding: 24px;
+}
+nav {
+  position: sticky;
+  top: 24px;
+  align-self: start;
+  min-width: 0;
+  max-height: calc(100dvh - 48px);
+  overflow: auto;
+  padding: 10px 8px 10px 0;
+  scrollbar-gutter: stable;
+}
+summary {
+  cursor: pointer;
+  padding: 12px 8px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+nav ol { list-style: none; margin: 10px 0 0; padding: 0; }
+nav li { margin: 0 0 4px; }
+nav a {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 10px 8px;
+  border-radius: 5px;
+  font-size: 14px;
+  line-height: 1.45;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+nav a:hover { background: #e1ebf0; }
+main {
+  min-width: 0;
+  padding: 40px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--paper);
+  box-shadow: 0 4px 24px #16384908;
+  overflow-wrap: anywhere;
+}
+h1 { margin: 0 0 28px; font-size: clamp(28px, 2.5vw, 34px); line-height: 1.2; letter-spacing: -.025em; }
+h2 { margin: 54px 0 20px; padding-top: 20px; border-top: 2px solid var(--border); font-size: 25px; line-height: 1.3; }
+h3 { margin: 30px 0 12px; font-size: 19px; line-height: 1.4; }
+h1, h2, h3 { text-wrap: balance; }
+p { margin: 14px 0; }
+li { margin: 8px 0; }
+.table-scroll {
+  max-width: 100%;
+  overflow-x: auto;
+  margin: 24px 0;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+}
+table { width: 100%; border-collapse: collapse; font-size: 14px; line-height: 1.55; }
+th, td { min-width: 130px; padding: 12px 14px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+th { background: #eaf1f5; font-weight: 650; }
+tr:last-child td { border-bottom: 0; }
+tbody tr:nth-child(even) { background: #f8fafb; }
+code { padding: 2px 4px; border-radius: 3px; background: #eef3f6; font: .88em/1.55 Consolas, "Courier New", monospace; overflow-wrap: anywhere; }
+pre { max-width: 100%; overflow: auto; padding: 20px; border-radius: 7px; background: #162b3b; color: #edf6fa; line-height: 1.6; }
+pre code { padding: 0; background: none; color: inherit; overflow-wrap: normal; }
+footer { margin-top: 40px; padding-top: 18px; border-top: 1px solid var(--border); color: var(--muted); font-size: 13px; }
+.skip { position: absolute; z-index: 10; top: -100px; left: 12px; padding: 10px; background: white; }
+.skip:focus { top: 12px; }
+@media (max-width: 1023px) {
+  .layout { display: block; padding: 20px; }
+  nav { position: static; max-height: none; overflow: visible; margin-bottom: 16px; padding: 0; scrollbar-gutter: auto; }
+  .contents { border: 1px solid var(--border); border-radius: 8px; background: var(--paper); }
+  summary { min-height: 48px; padding: 12px 16px; }
+  nav ol { margin: 0; padding: 0 12px 12px; }
+  main { padding: 30px; }
+}
+@media (max-width: 600px) {
+  .layout { padding: 12px; }
+  main { padding: 26px 18px; }
+  h2 { font-size: 22px; }
+  h3 { font-size: 18px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+}
+@media print {
+  body { background: white; font-size: 10pt; }
+  .layout { display: block; max-width: none; padding: 0; }
+  nav, .skip { display: none; }
+  main { padding: 0; border: 0; box-shadow: none; }
+  h2, h3 { break-after: avoid; }
+  h2 { margin-top: 24px; }
+  pre, tr { break-inside: avoid; }
+  .table-scroll { overflow: visible; }
+  table { font-size: 8pt; }
+  th, td { min-width: 0; padding: 6px; }
+  a { color: inherit; }
+  pre { white-space: pre-wrap; }
+  footer { font-size: 8pt; }
+}
+</style></head><body><a class="skip" href="#report">Skip to report</a><div class="layout"><nav aria-label="Table of contents"><details class="contents" open><summary>cgSDK 1.54.8 · Contents</summary><ol><li><a href="#section-1">1 Scope and evidence</a></li><li><a href="#section-2">2 SDK components and responsibilities</a></li><li><a href="#section-3">3 Initialization and shared configuration</a></li><li><a href="#section-7">4 Runtime configuration framework</a></li><li><a href="#section-11">5 A/B test framework</a></li><li><a href="#section-16">6 Segmentation interfaces and boundaries</a></li><li><a href="#section-21">7 Content configuration and caching</a></li><li><a href="#section-24">8 Analytics state and native summary delivery</a></li><li><a href="#section-28">9 Custom analytics events and managed delivery</a></li><li><a href="#section-33">10 Purchase revenue and analytics callbacks</a></li><li><a href="#section-34">11 Ad handling by format</a></li><li><a href="#section-43">12 Puzzle Master framework</a></li><li><a href="#section-44">13 Leaderboard framework</a></li><li><a href="#section-45">14 Daily Puzzle retrieval</a></li><li><a href="#section-46">15 Purchase-reporting contract</a></li><li><a href="#section-47">16 Level and progression integration</a></li><li><a href="#section-48">17 User information</a></li><li><a href="#section-49">18 Installation, lifecycle wiring, and platform dependencies</a></li><li><a href="#section-54">19 Persistence and refresh reference</a></li><li><a href="#section-55">20 Source findings requiring care</a></li><li><a href="#section-56">21 Device validation plan</a></li><li><a href="#section-57">22 Primary code reading order</a></li></ol></details></nav><main id="report"><h1>cgSDK 1.54.8: Technical and Integration Report</h1>
 <p>Report date: 27 October 2026<br>Package: <code>com.coregame.sdk</code>, version <code>1.54.8</code><br>Audience: developers and technical product owners integrating or evaluating cgSDK</p>
 <p>cgSDK exposes several distinct systems: runtime configuration retrieval, experiment assignment, historical metric submission, content delivery, analytics, ad mediation, purchase reporting, and goal/competition modules. They share native platform services and initialization data, but their caches, persistence, and delivery behavior differ.</p>
 <p>Here, <strong>managed code</strong> means the visible C# implementation; <strong>native code</strong> means the compiled Android/iOS libraries. This report describes the extracted 1.54.8 C# implementation and the Android/iOS bridge contracts. Game code appears only where it clarifies SDK consumption. Native libraries are included as compiled artifacts; backend targeting rules and native transport internals are outside the visible implementation. Source links identify the code behind each major behavior. <a href="com.coregame.sdk-1.54.8/package.json" title="Source line 1">Package metadata</a></p>
@@ -12,7 +142,7 @@
 <p>The SDK directory is <code>SDKExtract/com.coregame.sdk-1.54.8/</code>. Game examples refer to the project&#39;s <code>MergeFever/Assets/</code> files. Ten central integration files were also compared against the extracted <code>GameIntegration</code> copies and matched, including experiment overrides, runtime consumers, and the main-content handler.</p>
 <p>The companion <code>CGSDK_REPORT_SOURCES.json</code> records the referenced files, source lines, and SHA-256 hashes. It makes the source snapshot identifiable if the project changes later. Findings about failure conditions below are derived from control flow; they are not results of device tests or live backend requests.</p>
 <h2 id="section-2">2 SDK components and responsibilities</h2>
-<div class="table-scroll"><table>
+<div class="table-scroll" tabindex="0" role="region" aria-label="2 SDK components and responsibilities table, scroll horizontally if needed"><table>
 <thead>
 <tr>
 <th>Component</th>
@@ -114,7 +244,7 @@
 <h3 id="section-5">Startup sequence</h3>
 <p><code>SdkManager.OnAwake()</code> records install time if absent, invokes native initialization, creates the main-thread executor, initializes <code>TrackingBridge</code>, starts the periodic service, and restores main-content services. It then schedules a fallback initialization callback after five real-time seconds. <code>TrackingBridge.Initialize()</code> restores live tracking state and checks session rollover before starting the managed custom-event queue. <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/SdkManager.cs" title="Source line 77">SDK startup</a> · <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Track/TrackingBridge.cs" title="Source line 40">Tracking initialization</a></p>
 <p>Native initialization supplies a pipe-delimited configuration. <code>GameCallbacks.HandleCoreGameSDKInitSuccess()</code> stores the identity/context fields and user tracking fraction in <code>SdkManager</code> and PlayerPrefs, then explicitly calls <code>PlayerPrefs.Save()</code>. Optional event thresholds and hardcoded experiment assignments populate separate in-memory maps:</p>
-<div class="table-scroll"><table>
+<div class="table-scroll" tabindex="0" role="region" aria-label="3 Initialization and shared configuration table, scroll horizontally if needed"><table>
 <thead>
 <tr>
 <th>Field</th>
@@ -163,7 +293,7 @@
 <p>Empty native results are cached for the same 300 seconds as valid payloads. A consumer that retries rapidly can therefore receive the same cached empty response until the entry expires. The facade exposes no explicit cache-clear API and performs no C# disk persistence.</p>
 <p>The wrapper does not reveal whether the native result came from memory, disk, or a recent network request. It also does not establish the native fetch interval, endpoint, retry policy, or targeting rules. The 300-second value describes only the C# cache.</p>
 <h3 id="section-10">Consumer examples</h3>
-<div class="table-scroll"><table>
+<div class="table-scroll" tabindex="0" role="region" aria-label="4 Runtime configuration framework table, scroll horizontally if needed"><table>
 <thead>
 <tr>
 <th>Game consumer</th>
@@ -208,7 +338,7 @@
 </ol>
 <p>This getter does not use <code>codeVersion</code> and has no TTL check. Updates do not clear the dictionary first, so omitted entries remain. A parsing error can leave assignments processed before the error already updated. No game C# subscriptions or calls to the hardcoded experiment APIs were found in the inspected project. <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Supplemental/CgSdkExperiments.cs" title="Source line 63">Hardcoded experiment implementation</a> · <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/SdkManager.cs" title="Source line 126">Definition forwarding</a></p>
 <h3 id="section-15">Comparison</h3>
-<div class="table-scroll"><table>
+<div class="table-scroll" tabindex="0" role="region" aria-label="5 A/B test framework table, scroll horizontally if needed"><table>
 <thead>
 <tr>
 <th>Property</th>
@@ -260,7 +390,7 @@
 <p>The session dictionaries do not tell us whether native code separately persists assignments.</p>
 <h2 id="section-16">6 Segmentation interfaces and boundaries</h2>
 <h3 id="section-17">Distinct segmentation-related interfaces</h3>
-<div class="table-scroll"><table>
+<div class="table-scroll" tabindex="0" role="region" aria-label="6 Segmentation interfaces and boundaries table, scroll horizontally if needed"><table>
 <thead>
 <tr>
 <th>Operation</th>
@@ -292,7 +422,7 @@
 <p>These interfaces do not expose one universal segment ID. In particular, an analytics sampling fraction is not an A/B-test allocation percentage. The C# source does not establish that a submitted historical metric immediately changes an experiment or runtime response.</p>
 <h3 id="section-18">Historic Data Segmentation API</h3>
 <p><code>CgSdkHistoricData</code> explicitly exposes the SDK&#39;s historical metric ingestion interface. A <code>GameMetric</code> contains:</p>
-<div class="table-scroll"><table>
+<div class="table-scroll" tabindex="0" role="region" aria-label="6 Segmentation interfaces and boundaries table, scroll horizontally if needed"><table>
 <thead>
 <tr>
 <th>Field</th>
@@ -332,7 +462,7 @@
 <p>This facade has no C# TTL, fetch API, invalidation method, or persistence layer. The 300-second runtime/experiment cache does not apply to this catalog interface. <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Impl/ContentCatalog/CgSdkContentCatalog.cs" title="Source line 33">Catalog contract</a></p>
 <h2 id="section-24">8 Analytics state and native summary delivery</h2>
 <h3 id="section-25">Tracker families</h3>
-<div class="table-scroll"><table>
+<div class="table-scroll" tabindex="0" role="region" aria-label="8 Analytics state and native summary delivery table, scroll horizontally if needed"><table>
 <thead>
 <tr>
 <th>Tracker</th>
@@ -377,18 +507,18 @@
 <h3 id="section-29">Event schema</h3>
 <p><code>SharedTracker</code> supplies <code>Parent</code>, string slots <code>S1</code> through <code>S40</code>, and numeric slots <code>D1</code> through <code>D10</code>. In the inspected game, <code>S1</code> is the custom event name and <code>Parent</code> groups related events.</p>
 <p>The SDK overwrites <code>S39</code> with build number and <code>S40</code> with calendar day. These two fields should not hold game-specific payload values. It replaces colon and caret characters in the string slots, then serializes:</p>
-<pre><code class="language-text">shared:Parent:timestamp:S1:...:S40:D1:...:D10
+<pre tabindex="0" role="region" aria-label="Code example, scroll horizontally if needed"><code class="language-text">shared:Parent:timestamp:S1:...:S40:D1:...:D10
 </code></pre>
 <p><code>Parent</code> is concatenated without passing through the same sanitizer. Numeric values use invariant-culture formatting. The event is handed directly to <code>CgSdkTracker</code>; it does not pass through <code>TrackingBridge.CollectTracking()</code>. <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Track/model/SharedTracker.cs" title="Source line 62">Custom event implementation</a></p>
 <h3 id="section-30">Sampling</h3>
 <p>Before serialization, <code>SendTracking()</code> applies this condition:</p>
-<pre><code class="language-text">If userTrackingFraction &gt; thresholdFor(S1), drop the event.
+<pre tabindex="0" role="region" aria-label="Code example, scroll horizontally if needed"><code class="language-text">If userTrackingFraction &gt; thresholdFor(S1), drop the event.
 </code></pre>
 <p>The threshold map is encoded as <code>eventName=integer:eventName=integer</code>. Updating it replaces the map. An unconfigured event has threshold zero. No fresh random draw per event is visible here, and the integer scale is not documented by this code; it should not be described as a specific percentage.</p>
 <p>The user value and event thresholds arrive through native initialization or a later tracking-fractions callback. These sampling values control custom-event collection, not feature assignment. <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Track/model/SharedTracker.cs" title="Source line 62">Sampling decision</a> · <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Track/api/CgSdkTracker.cs" title="Source line 165">Threshold map</a> · <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/GameCallbacks.cs" title="Source line 74">Sampling update callback</a></p>
 <h3 id="section-31">Persistence and upload</h3>
 <p>An event that passes sampling is offered to the managed queue. If the queue is not initialized, the call is dropped. If initialization has started but restoration is unfinished, the event is buffered temporarily. Once ready, the queue appends events and saves them to <code>Application.persistentDataPath/cgsdk/trkuni.json</code>.</p>
-<div class="table-scroll"><table>
+<div class="table-scroll" tabindex="0" role="region" aria-label="9 Custom analytics events and managed delivery table, scroll horizontally if needed"><table>
 <thead>
 <tr>
 <th>Setting</th>
@@ -451,7 +581,7 @@
 <p>The visible C# API has no explicit load, preload, destroy, retry, network-selection, ad-unit-selection, or per-request placement argument. Availability and show requests cross into native mediation. Consequently, waterfall/bidding behavior, automatic reloads, retry delays, native frequency caps, and network-specific failure details cannot be established from this C# source. A returned show boolean is not proof of a displayed impression or earned reward; later callbacks carry those lifecycle signals.</p>
 <h3 id="section-36">Format and callback reference</h3>
 <p>All methods below belong to <code>AdsNative.Instance</code>; events belong to <code>AdsNativeCallbacks.Instance</code>.</p>
-<div class="table-scroll"><table>
+<div class="table-scroll" tabindex="0" role="region" aria-label="11 Ad handling by format table, scroll horizontally if needed"><table>
 <thead>
 <tr>
 <th>Format</th>
@@ -496,7 +626,7 @@
 <p>The SDK forwards the native <code>grantReward</code> result through <code>OnVideoAdHidden(bool)</code>. Android receives a boolean; iOS reads the first <code>#</code>-separated field and treats exactly <code>&quot;1&quot;</code> as true. C# does not calculate eligibility, reward quantity, or reward type. It supplies no separate public reward-earned event, transaction identifier, or reward deduplication mechanism in these handlers. <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/AdsNativeCallbacks.cs" title="Source line 195">Reward callback</a> · <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Platform/Android/AdsNativeCallbacksAndroid.cs" title="Source line 21">Android callback adapter</a> · <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Platform/iOS/AdsNativeCallbacksIOS.cs" title="Source line 22">iOS callback decoding</a></p>
 <p>The game stores the pending <code>RewardAdData</code>, clears its availability flag, and calls the SDK show method. On device, <code>OnVideoAdHidden(true)</code> calls <code>GrantReward()</code>, which invokes that request&#39;s <code>adCompletedAction</code>; false closes the flow without that completion action. <code>OnVideoAdDisplayFailed</code> invokes <code>adFailedAction</code>. The Editor shortcut calls completion immediately and therefore does not validate the device reward flow. <a href="../MergeFever/Assets/Tag/MergeGame/CoreGame/Scripts/GoogleAdmob/RewardedAd.cs" title="Source line 58">Rewarded request</a> · <a href="../MergeFever/Assets/Tag/MergeGame/CoreGame/Scripts/GoogleAdmob/RewardedAd.cs" title="Source line 101">Rewarded callbacks and grant</a></p>
 <p>This shortened excerpt preserves the key SDK-to-game decision; logging and other game side effects are omitted:</p>
-<pre><code class="language-csharp">private void OnVideoAdHidden(bool grantReward)
+<pre tabindex="0" role="region" aria-label="Code example, scroll horizontally if needed"><code class="language-csharp">private void OnVideoAdHidden(bool grantReward)
 {
     if (grantReward)
     {
@@ -523,7 +653,7 @@
 <p>For expiry, native sends reward strings. C# sets <code>ShouldGrantRewardsOnExpiry</code> true and schedules <code>GrantRewardsAndReset(string[])</code> on the Unity main-thread executor. Nonempty data splits on <code>&amp;</code>; empty data becomes a one-element array containing an empty string. The SDK event does not itself grant rewards or reset all progress. <code>MarkRewardsGrantedOnExpiry()</code> only clears the local flag. The game waits for managers, parses rewards, adds them to inventory, clears this flag when parsed rewards exist, and reinitializes its UI. Its empty/unparseable reward branch does not clear the SDK flag, which can leave its subsequent initialization blocked by that flag. Treat this as a source-level edge case, not a reproduced device failure. <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Impl/PuzzleMaster/CgSdkPuzzleMaster.cs" title="Source line 303">Expiry callback</a> · <a href="../MergeFever/Assets/Tag/MergeGame/Features/PuzzleMaster/Scripts/PuzzleMasterManager.cs" title="Source line 360">Game expiry flow</a></p>
 <h2 id="section-44">13 Leaderboard framework</h2>
 <p><code>CgSdkLeaderBoard</code> is an event-driven facade. Native callbacks mark the feature enabled for the user and move the in-memory status through ready (0), running (1), ended (2), and expired (3). The enabled flag starts false and is only set true by the visible methods; there is no visible disable/reset-to-false operation. Neither flag nor status is persisted by this C# facade. Android has actual native forwarding; iOS branches for its public game calls are <code>TO BE ADDED</code>, and the inspected iOS game-callback switch has no leaderboard cases. Do not infer iOS support from the shared class existing. <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Impl/LeaderBoard/CgSdkLeaderBoard.cs" title="Source line 181">Public API</a> · <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Impl/LeaderBoard/CgSdkLeaderBoard.cs" title="Source line 271">Callback state</a> · <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Supplemental/CgSdkConstants.cs" title="Source line 14">Constants</a></p>
-<div class="table-scroll"><table>
+<div class="table-scroll" tabindex="0" role="region" aria-label="13 Leaderboard framework table, scroll horizontally if needed"><table>
 <thead>
 <tr>
 <th>Callback</th>
@@ -570,7 +700,7 @@
 <p>In the Editor it loads <code>Resources/CoreGameSDK/CgSdkDailyPuzzleConfig</code> and returns <code>puzzleData</code>. Missing configuration is dereferenced without a null guard. The same PlayerPrefs cache check happens first, so a previous same-day cached value can hide edits to the Editor asset. No <code>CgSdkDailyPuzzle</code> calls were found under the live game&#39;s C# assets; this is a package capability, not evidence of an enabled game feature. <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Impl/DailyPuzzle/CgSdkDailyPuzzle.cs" title="Source line 27">Daily retrieval</a></p>
 <h2 id="section-46">15 Purchase-reporting contract</h2>
 <p><code>IapNative.SendPurchaseInfoVerified</code> reports a purchase already confirmed by the platform store; it does not initiate a purchase, grant an entitlement, restore purchases, or return a verification decision. The method and both platform adapters return void. Its documentation asks callers to report once after store confirmation. C# supplies no deduplication, durable retry queue, success/failure event, or receipt-verification result. As noted in section 10, local revenue increments precede native processing. <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/IapNative.cs" title="Source line 25">Purchase entry point</a> · <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Platform/Android/IapNativeAndroid.cs" title="Source line 34">Android purchase bridge</a> · <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Platform/iOS/IapNativeIOS.cs" title="Source line 24">iOS purchase bridge</a></p>
-<div class="table-scroll"><table>
+<div class="table-scroll" tabindex="0" role="region" aria-label="15 Purchase-reporting contract table, scroll horizontally if needed"><table>
 <thead>
 <tr>
 <th>Argument</th>
@@ -612,7 +742,7 @@
 <p>The inspected game&#39;s <code>GeneratePurchaseReceipt</code> unconditionally calls Google-Play-shaped receipt extraction. It assigns <code>order.Info.TransactionID</code> to a separate <code>purchaseToken</code> field, but the cgSDK call passes <code>storeIdentifier</code>, extracted from Google receipt JSON. No corresponding iOS transaction-ID mapping is visible in this path. This is an integration mismatch to validate on iOS, not proof that a production iOS purchase has failed. <a href="../MergeFever/Assets/CoreGameSDK/IapController.cs" title="Source line 19">Game forwarding</a> · <a href="../MergeFever/Assets/Tag/Plugins/InAppPurchase/IAPManager.cs" title="Source line 458">Store confirmation</a> · <a href="../MergeFever/Assets/Tag/Plugins/InAppPurchase/IAPManager.cs" title="Source line 755">Receipt extraction</a> · <a href="../MergeFever/Assets/Tag/Plugins/InAppPurchase/IAPManager.cs" title="Source line 339">Configured USD price</a></p>
 <h2 id="section-47">16 Level and progression integration</h2>
 <p><code>LevelNative</code> coordinates managed analytics and native game progression signals. Its methods return void; they do not supply acknowledgments or persist their own outgoing request queue.</p>
-<div class="table-scroll"><table>
+<div class="table-scroll" tabindex="0" role="region" aria-label="16 Level and progression integration table, scroll horizontally if needed"><table>
 <thead>
 <tr>
 <th>Call</th>
@@ -653,7 +783,7 @@
 <h2 id="section-49">18 Installation, lifecycle wiring, and platform dependencies</h2>
 <h3 id="section-50">Dependency layers and versions</h3>
 <p><code>package.json</code> identifies cgSDK 1.54.8 and its private registry, but declares neither a Unity minimum version nor a UPM dependency map. The game pins cgSDK 1.54.8 and External Dependency Manager 1.2.186; its recorded Unity version is 6000.0.68f1. These are this project&#39;s versions, not a verified compatibility range. <a href="com.coregame.sdk-1.54.8/package.json" title="Source line 1">Package metadata</a> · <a href="../MergeFever/Packages/manifest.json" title="Source line 4">Game manifest</a> · <a href="../MergeFever/ProjectSettings/ProjectVersion.txt" title="Source line 1">Unity version</a></p>
-<div class="table-scroll"><table>
+<div class="table-scroll" tabindex="0" role="region" aria-label="18 Installation, lifecycle wiring, and platform dependencies table, scroll horizontally if needed"><table>
 <thead>
 <tr>
 <th>Layer</th>
@@ -702,7 +832,7 @@
 <p><code>SdkManager.OnAwake</code>, <code>OnPause</code>, and <code>OnResume</code> are explicit integration methods, not Unity&#39;s ordinary <code>Awake</code> and <code>OnApplicationPause</code> message names. The game&#39;s analytics handler forwards lifecycle events to them. Pause stops the periodic service, collects tracking, saves Puzzle Master, calls native pause, and saves main content. Resume updates tracking, restarts the periodic service, and calls native resume. <code>OnDestroy</code> stops the periodic service. Correct forwarding therefore affects feature persistence as well as analytics. <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/SdkManager.cs" title="Source line 97">SDK lifecycle</a> · <a href="../MergeFever/Assets/Tag/MergeGame/CoreGame/Scripts/Analytics/CoreGameSdkAnalyticsHandler.cs" title="Source line 231">Game forwarding</a></p>
 <p><code>MainThreadExecutor</code>, in <code>Supplemental/Util.cs</code>, queues actions under a lock and drains them in a persistent MonoBehaviour&#39;s <code>Update</code>, catching exceptions per action. These callbacks are deferred to Update rather than executed immediately. APIs that bypass this helper, such as ad-revenue handling, need separate thread analysis. Section 8 describes the periodic service&#39;s 60-second async delay. <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Supplemental/Util.cs" title="Source line 103">Main-thread executor</a></p>
 <h3 id="section-53">Platform capability summary</h3>
-<div class="table-scroll"><table>
+<div class="table-scroll" tabindex="0" role="region" aria-label="18 Installation, lifecycle wiring, and platform dependencies table, scroll horizontally if needed"><table>
 <thead>
 <tr>
 <th>API/module</th>
@@ -756,7 +886,7 @@
 </tbody></table></div>
 <p>This table describes visible implementation paths, not successful device-test results. Module sections provide the relevant source references and limitations.</p>
 <h2 id="section-54">19 Persistence and refresh reference</h2>
-<div class="table-scroll"><table>
+<div class="table-scroll" tabindex="0" role="region" aria-label="19 Persistence and refresh reference table, scroll horizontally if needed"><table>
 <thead>
 <tr>
 <th>State</th>
@@ -843,7 +973,7 @@
 <p>These layers can make a newly published setting take effect at different times. Native availability, the C# cache, and a consumer that has already applied a snapshot are separate stages. There is no universal &quot;refresh everything&quot; method demonstrated by these interfaces.</p>
 <h2 id="section-55">20 Source findings requiring care</h2>
 <p>The following conditions follow from the implementation. They are not fixes applied to the package, and they have not been reproduced against the backend or on a device.</p>
-<div class="table-scroll"><table>
+<div class="table-scroll" tabindex="0" role="region" aria-label="20 Source findings requiring care table, scroll horizontally if needed"><table>
 <thead>
 <tr>
 <th>Finding</th>
@@ -905,7 +1035,7 @@
 <p>These findings should be considered when interpreting missing events, delayed configuration changes, or differences between test installations. They do not establish the frequency of any issue in production.</p>
 <h2 id="section-56">21 Device validation plan</h2>
 <p>The following checks would validate runtime behavior beyond this source report. They have not been executed as part of report preparation.</p>
-<div class="table-scroll"><table>
+<div class="table-scroll" tabindex="0" role="region" aria-label="21 Device validation plan table, scroll horizontally if needed"><table>
 <thead>
 <tr>
 <th>Area</th>
@@ -1019,4 +1149,19 @@
 <p>For configuration and experiments, start with <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Supplemental/CgSdkRuntimes.cs" title="Source line 20">CgSdkRuntimes</a> and <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Supplemental/CgSdkExperiments.cs" title="Source line 34">CgSdkExperiments</a>, then inspect the platform bridges. For segmentation inputs, read <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Impl/HistoricData/CgSdkHistoricData.cs" title="Source line 37">CgSdkHistoricData</a>; for content eligibility and delivery, read <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Impl/MainContent/CgSdkMainContent.cs" title="Source line 155">CgSdkMainContent</a>.</p>
 <p>For analytics, read <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/SdkManager.cs" title="Source line 77">SdkManager startup</a>, <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/GameCallbacks.cs" title="Source line 26">GameCallbacks initialization</a>, <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Track/TrackingBridge.cs" title="Source line 40">TrackingBridge</a>, <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Track/model/SharedTracker.cs" title="Source line 62">SharedTracker</a>, and <a href="com.coregame.sdk-1.54.8/Mediation/Runtime/Scripts/Track/api/CgSdkTracker.cs" title="Source line 130">CgSdkTracker</a> in that order. This separates lifecycle, summary tracking, custom-event construction, sampling, and transport.</p>
 <p>For practical integration examples, read <a href="../MergeFever/Assets/Tag/Plugins/ABTest/Scripts/ABTestHandler.cs" title="Source line 58">ABTestHandler</a>, <a href="../MergeFever/Assets/Tag/MergeGame/Features/AdPass/Scripts/AdPassSdkRuntimeConfig.cs" title="Source line 65">AdPass runtime application</a>, <a href="../MergeFever/Assets/Tag/MergeGame/CoreGame/Scripts/GoogleAdmob/InterstitialAdSdkRuntimeConfig.cs" title="Source line 48">interstitial runtime application</a>, and <a href="../MergeFever/Assets/Tag/MergeGame/CoreGame/Scripts/Analytics/CoreGameSdkAnalyticsHandler.cs" title="Source line 457">CoreGameSdkAnalyticsHandler order tracking</a>.</p>
-<footer>Converted from <a href="CGSDK_TECHNICAL_REPORT.md">CGSDK_TECHNICAL_REPORT.md</a>. Source references open local project files; tooltips show the original line numbers. Keep this HTML in SDKExtract alongside the project folders for those links to work. No internet connection is required to read this report.</footer></main></div></body></html>
+<footer>Converted from <a href="CGSDK_TECHNICAL_REPORT.md">CGSDK_TECHNICAL_REPORT.md</a>. Source references open local project files; tooltips show the original line numbers. Keep this HTML in SDKExtract alongside the project folders for those links to work. No internet connection is required to read this report.</footer></main></div>
+<script>
+(() => {
+  const contents = document.querySelector('.contents');
+  const desktopLayout = window.matchMedia('(min-width: 1024px)');
+  const updateContents = () => { contents.open = desktopLayout.matches; };
+  updateContents();
+  desktopLayout.addEventListener('change', updateContents);
+  contents.addEventListener('click', (event) => {
+    if (!desktopLayout.matches && event.target.closest('a[href^="#"]')) {
+      contents.open = false;
+    }
+  });
+})();
+</script>
+</body></html>
