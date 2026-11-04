@@ -17,3 +17,4 @@ Static HTML requirements and reports.
 - [Merge Fever Board Items](./merge-fever-board-items.html)
 - [Gossip Harbor Orders by Unlock Path](./gossip-harbor-orders-by-unlock-path.html)
 - [cgSDK understanding](./cgsdk-understanding.html)
+- [Gossip Harbor Monetization Dashboard](./gossip-harbor-monetization-dashboard.html)

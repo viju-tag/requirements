@@ -1,0 +1,332 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Gossip Harbor Monetization</title>
+<style>
+  /* Layout: a scanned report. Harbor-inspired palette: deep teal ink on warm paper, coral accent for the lead series. */
+  :root {
+    --bg: #f7f5f0; --panel: #ffffff; --fg: #1c2a33; --muted: #5f6f7a; --line: #dfe3e2;
+    --accent: #e8734a; --accent-soft: rgba(232,115,74,.18); --bar-muted: #b9c6cb; --grid: #e9ecec; --axis: #c3cbcd;
+    --popover: #ffffff; --shadow: 0 6px 20px rgba(28,42,51,.14);
+    --sans: "Segoe UI", -apple-system, system-ui, Roboto, Helvetica, Arial, sans-serif;
+    --serif: Georgia, "Times New Roman", serif;
+    --radius: 10px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #141b20; --panel: #1c252b; --fg: #e8ecee; --muted: #9aa8b0; --line: #2e3a41;
+      --accent: #f28b63; --accent-soft: rgba(242,139,99,.22); --bar-muted: #46575f; --grid: #26313a; --axis: #3b4a53;
+      --popover: #232e35; --shadow: 0 6px 20px rgba(0,0,0,.5); color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #141b20; --panel: #1c252b; --fg: #e8ecee; --muted: #9aa8b0; --line: #2e3a41;
+    --accent: #f28b63; --accent-soft: rgba(242,139,99,.22); --bar-muted: #46575f; --grid: #26313a; --axis: #3b4a53;
+    --popover: #232e35; --shadow: 0 6px 20px rgba(0,0,0,.5); color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body { background: var(--bg); color: var(--fg); font-family: var(--sans); font-size: 14px; line-height: 1.45;
+    padding-block: 28px 48px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+  .gh { max-width: 80rem; margin-inline: auto; display: flex; flex-direction: column; gap: 18px; }
+  h1 { font-family: var(--serif); font-weight: 400; font-size: 2rem; margin: 0 0 6px; text-wrap: balance; letter-spacing: -0.01em; }
+  h2 { font-size: 1.05rem; font-weight: 600; margin: 0; }
+  p { margin: 0; }
+  .take { max-width: 72ch; font-size: 1rem; }
+  .take b, .tile b { font-weight: 600; font-variant-numeric: tabular-nums; }
+  .note { color: var(--muted); font-size: .8rem; margin-top: 6px; max-width: 72ch; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+  .sub { color: var(--muted); font-size: .8rem; max-width: 80ch; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr)); gap: 18px; }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 11rem), 1fr)); gap: 14px; }
+  .tile { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 18px; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+  .tile .label { color: var(--muted); font-size: .72rem; letter-spacing: .04em; text-transform: uppercase; }
+  .tile .big { font-family: var(--serif); font-size: 2rem; line-height: 1.1; font-variant-numeric: tabular-nums; }
+  .tile .when { color: var(--muted); font-size: .78rem; }
+  .chart { position: relative; width: 100%; min-height: 280px; }
+  .chart.sm { min-height: 180px; }
+  .chart svg { display: block; width: 100%; height: auto; overflow: visible; }
+  .tip { position: absolute; pointer-events: none; background: var(--popover); border: 1px solid var(--line); border-radius: 8px; box-shadow: var(--shadow); padding: 6px 10px; font-size: .78rem; max-width: 18rem; z-index: 2; }
+  .tip .h { color: var(--muted); margin-bottom: 2px; }
+  .controls { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  .controls input, .controls select { font: inherit; font-size: .85rem; color: var(--fg); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; min-width: 0; }
+  .controls input { flex: 1 1 14rem; }
+  .controls input:focus-visible, .controls select:focus-visible, th button:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .tablebox { overflow: auto; max-height: 70vh; border: 1px solid var(--line); border-radius: 8px; }
+  table { border-collapse: collapse; width: 100%; font-size: .8rem; }
+  th { position: sticky; top: 0; background: var(--panel); text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); color: var(--muted); font-weight: 600; white-space: nowrap; z-index: 1; }
+  th button { all: unset; cursor: pointer; display: inline-flex; gap: 4px; align-items: center; }
+  th[aria-sort="ascending"] button::after { content: "▲"; font-size: .7em; }
+  th[aria-sort="descending"] button::after { content: "▼"; font-size: .7em; }
+  td { padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; font-variant-numeric: tabular-nums; }
+  tbody tr:last-child td { border-bottom: 0; }
+  .events td:nth-child(1) { text-align: right; color: var(--muted); }
+  .events td:nth-child(2) { font-weight: 600; min-width: 12rem; }
+  .events td:nth-child(5), .events td:nth-child(7) { min-width: 16rem; max-width: 26rem; }
+  .events td:nth-child(4), .events td:nth-child(8) { color: var(--muted); min-width: 9rem; }
+  .score { display: inline-flex; gap: 3px; align-items: center; white-space: nowrap; }
+  .score i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; background: var(--line); }
+  .score i.on { background: var(--accent); }
+  .bar { position: relative; min-width: 8rem; }
+  .bar span { position: relative; z-index: 1; }
+  .bar b { position: absolute; left: 0; top: 4px; bottom: 4px; background: var(--accent-soft); border-radius: 2px; }
+  .kv td:nth-child(2) { white-space: nowrap; font-weight: 600; }
+  .kv td:nth-child(3), .kv td:nth-child(4), .src td:nth-child(2) { color: var(--muted); }
+  a { color: var(--fg); text-decoration: underline; text-decoration-color: var(--muted); text-underline-offset: 2px; }
+  a:hover { text-decoration-color: var(--fg); }
+  footer { color: var(--muted); font-size: .78rem; }
+  @media (max-width: 700px) {
+    .events td:nth-child(4), .events th:nth-child(4), .events td:nth-child(8), .events th:nth-child(8) { display: none; }
+    .kv td:nth-child(3), .kv th:nth-child(3) { display: none; }
+    h1 { font-size: 1.6rem; }
+    .tile .big { font-size: 1.6rem; }
+  }
+</style>
+</head>
+<body>
+<div class="gh">
+  <header>
+    <h1>Gossip Harbor Monetization</h1>
+    <p class="take">Special offers and temporary bundles bring about <b id="t_offers">—</b>% of Gossip Harbor's in-app revenue, gem packs about <b id="t_gems">—</b>% and season passes about <b id="t_pass">—</b>%; every event below exists to drain energy so those offers land. The best month so far was $<b id="t_best">—</b>M in August 2026.</p>
+    <p class="note">Microfun publishes no official figures. Everything here is a third-party estimate (AppMagic net of store commission unless noted, Sensor Tower gross) compiled from public analyses on 4 November 2026.</p>
+  </header>
+
+  <section class="tiles" aria-label="Headline figures">
+    <div class="tile"><span class="label">Best month, IAP</span><span class="big">$<b id="k_best">—</b>M</span><span class="when">August 2026, #2 game worldwide (AppMagic)</span></div>
+    <div class="tile"><span class="label">2025 IAP revenue</span><span class="big">$<b id="k_2025">—</b>M</span><span class="when">Net of store cut (AppMagic); $650M gross per Sensor Tower</span></div>
+    <div class="tile"><span class="label">Lifetime IAP</span><span class="big">$<b id="k_life">—</b>M+</span><span class="when">Launch June 2022 to December 2025</span></div>
+    <div class="tile"><span class="label">IAP ARPDAU</span><span class="big">$<b id="k_arpdau">—</b></span><span class="when">2025, nearly double its closest rivals (Sensor Tower)</span></div>
+    <div class="tile"><span class="label">Live events per month</span><span class="big">~<b id="k_events">—</b></span><span class="when">Q3 2025, up from ~20 before Q2 2024</span></div>
+  </section>
+
+  <section class="card" id="revenue">
+    <h2>Monthly IAP revenue, 2024 to 2026</h2>
+    <p class="sub">Only months with a published estimate are shown, so the gaps are missing data, not zero revenue. Hover a bar for the basis and source.</p>
+    <div class="chart" id="rev_chart"></div>
+  </section>
+
+  <section class="grid">
+    <div class="card" id="mix">
+      <h2>Where the money comes from</h2>
+      <p class="sub">Share of IAP revenue by purchase type at the end of Q3 2024, the last published split (AppMagic). Rewarded ads add an estimated 15 to 20% on top.</p>
+      <div class="chart sm" id="mix_chart"></div>
+    </div>
+    <div class="card" id="phases">
+      <h2>How live ops scaled</h2>
+      <p class="sub">Events launched per month in each phase, and the mechanics and offer types each phase introduced.</p>
+      <div class="tablebox"><table class="phases">
+        <thead><tr><th>Phase</th><th>Period</th><th>Events / month</th><th>Introduced</th><th>Monetization</th></tr></thead>
+        <tbody id="phases_body"></tbody>
+      </table></div>
+    </div>
+  </section>
+
+  <section class="card" id="events">
+    <h2>Events and features ranked by how much they monetize</h2>
+    <p class="sub">Score 5 = a direct revenue line in the published split; 4 = a paid layer or named revenue driver; 3 = sells a shortcut; 2 = monetizes only through energy pressure; 1 = retention only. Scores are this report's judgment from the evidence column.</p>
+    <div class="controls">
+      <input id="ev-search" type="search" placeholder="Search events, mechanics, sources" aria-label="Search events">
+      <select id="ev-cat" aria-label="Filter by category"></select>
+      <span class="sub">Showing <b id="ev_count">—</b> of <b id="ev_total">—</b></span>
+    </div>
+    <div class="tablebox"><table class="events">
+      <thead><tr>
+        <th aria-sort="ascending"><button type="button" data-sort="rank">#</button></th>
+        <th><button type="button" data-sort="event">Event / feature</button></th>
+        <th><button type="button" data-sort="category">Category</button></th>
+        <th>Cadence</th>
+        <th>How it monetizes</th>
+        <th><button type="button" data-sort="score">Score</button></th>
+        <th>Evidence</th>
+        <th>Source</th>
+      </tr></thead>
+      <tbody id="events_body"></tbody>
+    </table></div>
+  </section>
+
+  <section class="grid">
+    <div class="card" id="calendar">
+      <h2>130 days of the live ops calendar</h2>
+      <p class="sub">Gamigion's count of a 130-day AppMagic calendar, 2026. Sales sit on top of the loops: 55 paid instances across 281 event instances.</p>
+      <div class="tablebox"><table class="kv"><thead><tr><th>Measure</th><th>Value</th></tr></thead><tbody id="cal_body"></tbody></table></div>
+    </div>
+    <div class="card" id="metrics">
+      <h2>Key figures</h2>
+      <p class="sub">Scale, audience and economy numbers behind the ranking, each with its period and source.</p>
+      <div class="tablebox"><table class="kv"><thead><tr><th>Metric</th><th>Value</th><th>Period</th><th>Source</th></tr></thead><tbody id="metrics_body"></tbody></table></div>
+    </div>
+  </section>
+
+  <section class="card" id="sources">
+    <h2>Sources</h2>
+    <p class="sub">Public analyses read for this report. Figures from different trackers disagree (AppMagic reports net of the 30% store cut, Sensor Tower reports gross), so compare like with like.</p>
+    <div class="tablebox"><table class="src"><thead><tr><th>Source</th><th>Date</th><th>What it gave</th></tr></thead><tbody id="src_body"></tbody></table></div>
+  </section>
+
+  <footer>Compiled 4 November 2026 from public third-party analyses. All revenue figures are estimates, not Microfun disclosures.</footer>
+</div>
+
+<script id="data" type="application/json">{"revenue_timeline": [{"month": "2024-07", "label": "Jul 2024", "iap_revenue_musd": "14", "basis": "Approx. monthly IAP derived from ~$500K/day gross IAP peaks and a $195M run rate incl. ads", "source": "Deconstructor of Fun (Sensor Tower), Aug 2024"}, {"month": "2024-08", "label": "Aug 2024", "iap_revenue_musd": "16", "basis": "RMB 114M monthly revenue, record at the time; ~50% from US", "source": "SocialPeta, 2024"}, {"month": "2025-04", "label": "Apr 2025", "iap_revenue_musd": "35", "basis": "'Leading the whole category, doing $35M a month'", "source": "Gamigion, 2025"}, {"month": "2025-10", "label": "Oct 2025", "iap_revenue_musd": "62", "basis": "Monthly IAP, Merge-2 genre record (AppMagic monthly report says $67.4M)", "source": "AppMagic LiveOps research, Dec 2025"}, {"month": "2025-12", "label": "Dec 2025", "iap_revenue_musd": "72", "basis": "Monthly IAP, new record", "source": "AppMagic monthly report, Jan 2026"}, {"month": "2026-02", "label": "Feb 2026", "iap_revenue_musd": "82.5", "basis": "Monthly IAP", "source": "MobileGamer.biz data digest (AppMagic), 2026"}, {"month": "2026-03", "label": "Mar 2026", "iap_revenue_musd": "100", "basis": "First month above $100M IAP", "source": "MobileGamer.biz / Friendly GameDev (AppMagic), 2026"}, {"month": "2026-07", "label": "Jul 2026", "iap_revenue_musd": "99.7", "basis": "Monthly IAP, net of store commission", "source": "AppMagic top games Aug 2026 report"}, {"month": "2026-08", "label": "Aug 2026", "iap_revenue_musd": "112.3", "basis": "Best month ever, #2 worldwide by revenue", "source": "AppMagic top games Aug 2026 report"}], "revenue_mix": [{"category": "Special offers & temporary bundles", "share_pct": "62", "what_it_is": "Event-linked packs, 1+1 deals, Buy All, escalating daily bundles, catch-up and energy offers"}, {"category": "Hard currency (gem packs)", "share_pct": "18", "what_it_is": "Standard gem packs ($1.99 to $40); gems fund energy refills, timer skips, bubbles, storage"}, {"category": "Seasonal passes", "share_pct": "10", "what_it_is": "Monthly season pass, premium ($4.99) and bonus tier ($7.99)"}, {"category": "Other / standard shop", "share_pct": "10", "what_it_is": "Remainder not attributed by AppMagic (classic packs, misc.)"}], "liveops_phases": [{"phase": "Foundation", "period": "Pre Q2 2024", "events_per_month": "20", "introduced": "Races (2023), short-term bundles, early pick-one / Buy All offers", "monetization": "Classic packs, seasonal pass, gem bundles"}, {"phase": "Acceleration", "period": "Q2 to Q3 2024", "events_per_month": "50", "introduced": "Album events, Lava Quest, sub-1-day loops", "monetization": "1+1 bundles, dual-tier season pass; offers tied to events; mix becomes 62% offers / 18% gems / 10% passes"}, {"phase": "Systemization", "period": "Q3 to Q4 2025", "events_per_month": "100", "introduced": "Win Streak, Lucky Wheel, chained events, co-op formats", "monetization": "Escalating daily bundles, event-specific passes, Buy All, end-of-event catch-up offers"}], "calendar_130d": [{"metric": "Event instances", "value": "281", "unit": "count"}, {"metric": "Unique event types", "value": "64", "unit": "count"}, {"metric": "Live events per day (avg)", "value": "8.6", "unit": "count"}, {"metric": "Live events per day (peak)", "value": "16", "unit": "count"}, {"metric": "Flaming Frenzy runs", "value": "91", "unit": "count"}, {"metric": "Friday launches", "value": "59", "unit": "count"}, {"metric": "Paid pass seasons (28 days each)", "value": "4", "unit": "count"}, {"metric": "Collection arcs (40 days each)", "value": "3", "unit": "count"}, {"metric": "Medal Challenges (30-34 days)", "value": "3", "unit": "count"}, {"metric": "Event-offer instances", "value": "27", "unit": "count"}, {"metric": "Paid-pass instances", "value": "16", "unit": "count"}, {"metric": "Hard-currency offer instances", "value": "12", "unit": "count"}], "key_metrics": [{"metric": "best_month", "label": "Best month (IAP)", "value": "112.3", "unit": "M USD", "period": "Aug 2026", "source": "AppMagic"}, {"metric": "rev_2025_net", "label": "2025 IAP revenue (net of store cut)", "value": "550", "unit": "M USD", "period": "2025", "source": "AppMagic Casual Report 2025"}, {"metric": "rev_2025_gross", "label": "2025 revenue (gross)", "value": "650", "unit": "M USD", "period": "2025", "source": "Sensor Tower via Naavik"}, {"metric": "ad_rev_2025", "label": "Estimated ad revenue", "value": "100", "unit": "M USD", "period": "2025", "source": "Naavik estimate (15-20% of revenue)"}, {"metric": "lifetime_iap", "label": "Lifetime IAP revenue", "value": "750", "unit": "M USD", "period": "to Dec 2025", "source": "AppMagic via Friendly GameDev"}, {"metric": "q1_2026", "label": "Q1 2026 revenue (+172% YoY)", "value": "270", "unit": "M USD", "period": "Q1 2026", "source": "Sensor Tower via MobileGamer.biz"}, {"metric": "arpdau_iap", "label": "IAP ARPDAU", "value": "0.31", "unit": "USD", "period": "2025", "source": "Sensor Tower via Naavik"}, {"metric": "arpdau_jun25", "label": "ARPDAU (vs Travel Town $0.35)", "value": "0.26", "unit": "USD", "period": "Jun 2025", "source": "Sensor Tower via Naavik"}, {"metric": "dau", "label": "Daily active users", "value": "5.4", "unit": "M", "period": "2025-26", "source": "AppMagic via Udonis"}, {"metric": "mau", "label": "Monthly active users", "value": "28", "unit": "M", "period": "2025-26", "source": "AppMagic via Udonis"}, {"metric": "downloads", "label": "Lifetime downloads", "value": "90", "unit": "M", "period": "to mid 2026", "source": "AppMagic via Udonis"}, {"metric": "installs_2025", "label": "Installs in 2025 (to June)", "value": "20", "unit": "M", "period": "H1 2025", "source": "AppMagic via Segwise"}, {"metric": "paid_downloads", "label": "Downloads from paid ads", "value": "78", "unit": "%", "period": "2025", "source": "Sensor Tower via Naavik"}, {"metric": "genre_share", "label": "Share of Merge-2 top-10 revenue", "value": "33", "unit": "%", "period": "2025", "source": "AppMagic"}, {"metric": "ads_share", "label": "Rewarded ads on top of IAP", "value": "15", "unit": "% (15-20)", "period": "2024-25", "source": "Deconstructor of Fun / Naavik"}, {"metric": "us_spend", "label": "US share of player spending", "value": "40", "unit": "%", "period": "2025", "source": "AppMagic via Udonis"}, {"metric": "female", "label": "Female players", "value": "79", "unit": "%", "period": "2025", "source": "Sensor Tower"}, {"metric": "avg_age", "label": "Average player age", "value": "32", "unit": "years", "period": "2025", "source": "Sensor Tower"}, {"metric": "events_month", "label": "Live events per month", "value": "100", "unit": "count", "period": "Q3 2025", "source": "AppMagic"}, {"metric": "sessions_week", "label": "Sessions per week (Travel Town: 32)", "value": "41", "unit": "count", "period": "2025", "source": "Sensor Tower via Naavik"}, {"metric": "minutes_week", "label": "Minutes per week (Travel Town: 128)", "value": "186", "unit": "min", "period": "2025", "source": "Sensor Tower via Naavik"}, {"metric": "rating", "label": "App Store rating (213K ratings)", "value": "4.6", "unit": "stars", "period": "Nov 2026", "source": "Apple App Store US"}, {"metric": "gems_per_usd_low", "label": "Gems per dollar at $1.99", "value": "50", "unit": "gems", "period": "2024", "source": "Deconstructor of Fun"}, {"metric": "gems_per_usd_high", "label": "Gems per dollar at $40 pack", "value": "84", "unit": "gems", "period": "2024", "source": "Deconstructor of Fun"}, {"metric": "first_offer_min", "label": "First offer shown after", "value": "10", "unit": "minutes", "period": "2024", "source": "Deconstructor of Fun"}], "events": [{"rank": "1", "event": "Special offers & temporary bundles", "category": "Offer layer", "cadence": "Always on; refreshed daily and per event", "how_it_monetizes": "Event-linked packs ($1.99 to $4.99), 1+1 deals, Buy All, escalating daily bundles, end-of-event catch-up offers; shown on the home screen and in every event", "score": "5", "evidence": "~62% of total revenue (AppMagic). 27 event-offer instances in a 130-day calendar. $2.99 holiday bundle was the standout seller. Every major feature has a visible special offer.", "source": "AppMagic; Gamigion; SocialPeta; Deconstructor of Fun"}, {"rank": "2", "event": "Energy and the gem economy", "category": "Core economy", "cadence": "Every session; refill ladder resets daily", "how_it_monetizes": "Energy caps at 100 (1 per 2 min). First refill 10 gems, doubling each time. Gems also skip timers (a 2.5h timer costs ~$1.50), pop bubbles, buy storage. Gem packs $1.99 to $40 at 50 to 84 gems per dollar", "score": "5", "evidence": "Gem packs ~18% of revenue; energy scarcity is the stop state that all events push on. Free energy via ads is 40% lower than Travel Town. Daily 'spend gems' season task reinforces the habit.", "source": "Deconstructor of Fun; Naavik; AppMagic; fan wiki"}, {"rank": "3", "event": "Energy packs and catch-up offers", "category": "Offer layer", "cadence": "Appear near end of events and seasons", "how_it_monetizes": "Premium Energy Bundle $3.99; ~780 energy for about $3; price drops dynamically if the player does not convert; targeted by event progress", "score": "4", "evidence": "A 4x-boost player burns 780 energy in 7 minutes, so several packs per session. Energy placements are the strongest sell points in the game.", "source": "Deconstructor of Fun; App Store IAP list"}, {"rank": "4", "event": "Season Pass (monthly)", "category": "Pass", "cadence": "28-day seasons; 4 per 130 days", "how_it_monetizes": "Free + premium track. Premium $4.99 (150 energy upfront); bonus tier $7.99 adds upfront points, +50% point bonus and endless rewards. Daily escalating objectives incl. 'spend gems'", "score": "4", "evidence": "~10% of revenue (AppMagic). Shown within the first 10 minutes of play. Anchors every other event; 'decoy pricing' pushes buyers to the $7.99 tier.", "source": "Deconstructor of Fun; AppMagic; Gamigion; PocketGamer.biz"}, {"rank": "5", "event": "Event-specific passes and 7-day mini passes", "category": "Pass", "cadence": "Per event; 16 paid-pass instances in 130 days", "how_it_monetizes": "A second progression pass stacked on the season pass inside individual events; 7-day mini passes lift midweek revenue", "score": "4", "evidence": "Introduced Q3-Q4 2025 as a segmentation tool; 'made monetization inside individual events more meaningful'. Part of the second revenue spike.", "source": "AppMagic; Gamigion"}, {"rank": "6", "event": "Rewarded video ads", "category": "Ads", "cadence": "Dynamic placements, mostly when energy runs out", "how_it_monetizes": "Watch an ad for energy (Energy Chest), timer skips, bubbles, gacha. Ad placements disappear for paying users, nudging them to gems", "score": "4", "evidence": "15-20% of revenue on top of IAP, about $100M in 2025 (Naavik). The only ad format in the game.", "source": "Naavik; Deconstructor of Fun; Udonis"}, {"rank": "7", "event": "Lava Quest", "category": "Timed survival chain", "cadence": "Multi-day; introduced Q2-Q3 2024", "how_it_monetizes": "100 players race through a timed chain of tasks; miss a timer and you are out; only finishers share the reward. Tight timers push hard-currency spend to keep going", "score": "4", "evidence": "Named by AppMagic as one of two mechanics behind the first revenue spike; 'pushed many players to spend hard currency'.", "source": "AppMagic; Friendly GameDev"}, {"rank": "8", "event": "Card album / collection events", "category": "Collection", "cadence": "39-42 days, ~every major holiday; 3 arcs per 130 days", "how_it_monetizes": "Card packs drop from orders and are sold in offers; Joker cards; duplicates convert to tokens. Completing an album pays 250 gems + 800 energy; prestige album 300 gems + 1000 energy", "score": "4", "evidence": "Gossip Harbor was among the first merge games to add albums (Nov 2024). 'Monetization powerhouse' (Gamigion). Players report albums are near impossible to finish, which drives pack purchases.", "source": "AppMagic; Gamigion; fan wiki; App Store reviews"}, {"rank": "9", "event": "Decoration exchange shop events (e.g. Lucky Larks dice board)", "category": "Decoration / exchange shop", "cadence": "17 days, 10-11 day gap between runs", "how_it_monetizes": "Earn tokens from orders, spend them stage by stage on permanent decorations; dice can be bought (price rises through the day) to shortcut. Stage costs escalate: stage 7 is ~26x stage 1", "score": "4", "evidence": "Only the current stage's prices are visible, hiding total cost. 'Final tier trap' demands more tokens than all previous tiers. Long-term retention anchor with a paid shortcut.", "source": "Deconstructor of Fun; fan wiki; gossipharborguide.com"}, {"rank": "10", "event": "Races and PvP leaderboards (Ziva's Goldrush, Beat the Heat Wipeout, Seagull Sprint, Harbor Rally)", "category": "Competitive", "cadence": "Weekends; 5-player sprints; 3-week Friday cycle", "how_it_monetizes": "Compete on coins or points; leaderboards 'force players to spend to win'; drains stockpiled energy and gems", "score": "3", "evidence": "Race was one of the first formats added (2023) and 'remains one of the game's strongest performers' (AppMagic). Paying players post 3,000 points in 2 hours.", "source": "AppMagic; Gamigion; gossipharborguide.com"}, {"rank": "11", "event": "Flaming Frenzy (daily booster)", "category": "Daily booster", "cadence": "14 hours; ran 91 of 130 days (70%)", "how_it_monetizes": "Collect flames to reach Silver (800) / Gold (1800) / Ruby (3000) dish tiers; generator cooldowns drop to zero for pure frenzy, burning energy fast", "score": "3", "evidence": "The single most frequent event on the calendar. Indirect monetization through energy depletion; chain offers provide 'a path for endless energy'.", "source": "Gamigion; fan wiki; Friendly GameDev"}, {"rank": "12", "event": "Lucky Wheel", "category": "Mini-game / social", "cadence": "Recurring; introduced Q3-Q4 2025", "how_it_monetizes": "Token spins for gems, energy and packs; tied directly to 1+1 offers", "score": "3", "evidence": "Named by AppMagic as a key mechanic of the 2025 systemization phase; 'made it easy for active users to keep the momentum going'.", "source": "AppMagic; fan wiki"}, {"rank": "13", "event": "Holiday and seasonal themed events (Halloween Hijinks, Ghostly Gallery, Thanksgiving, Black Friday, Easter)", "category": "Seasonal", "cadence": "One-day to multi-week; around every Western holiday", "how_it_monetizes": "Themed bundles and packs during the holiday window; themed decoration arcs", "score": "3", "evidence": "Thanksgiving and Black Friday campaigns in Nov 2024 produced the revenue jump that took Gossip Harbor past Travel Town. $2.99 bundle most popular.", "source": "SocialPeta; App Store listing"}, {"rank": "14", "event": "Storage expansion, timer skips and bubble pops", "category": "Gem sink", "cadence": "On demand", "how_it_monetizes": "Pure gem sinks aimed at heavy spenders; storage is 'extremely costly'", "score": "3", "evidence": "Deepens spend: an impatient player can spend several dollars for two sessions. Higher-level items cost progressively more in gems.", "source": "Deconstructor of Fun; Naavik"}, {"rank": "15", "event": "Win Streak / Streak events", "category": "Streak", "cadence": "Recurring; introduced Q3-Q4 2025", "how_it_monetizes": "Complete 7 orders in a row to share rewards; rewards consistency across the whole event grid", "score": "2", "evidence": "Engagement and retention mechanic; links daily play to other events.", "source": "AppMagic; Gamigion"}, {"rank": "16", "event": "Expeditions / digging and merge-point events (Seeker, Farmer, Navigator, Traveler, Adventurer)", "category": "Merge-point progression", "cadence": "1, 2 or 5 days", "how_it_monetizes": "Earn points by merging to scroll through a reward track; keys unlock levels; energy offers alongside", "score": "2", "evidence": "Playrix-style expeditions adopted to 'drive revenue, retention, and engagement'. Mostly indirect monetization via time pressure.", "source": "Naavik; fan wiki; Friendly GameDev"}, {"rank": "17", "event": "Weekly coin events (Lori's Dough Derby, Flight of Fancy)", "category": "Milestone", "cadence": "Weekly rotation; 1-3 days", "how_it_monetizes": "Collect coins to hit sawtooth milestones; extra challenge for the hyper-engaged", "score": "2", "evidence": "'Most of these events do not have any direct monetization angle'; monetization is indirect via time pressure.", "source": "Deconstructor of Fun; fan wiki"}, {"rank": "18", "event": "Flash events (Banana Peel's Prize, Energy Mania, Bonus Chest Rush, Double Pack Party)", "category": "Hourly flash", "cadence": "30 min to 1.5 h", "how_it_monetizes": "Short bursts that extend session length; rewards synergize with running events", "score": "2", "evidence": "Session-length drivers; keep players on the board while energy drains.", "source": "Gamigion; Friendly GameDev"}, {"rank": "19", "event": "Mini-games (Fruit Roulette, Raccoon Romps, Bingo, Harrison's Big Catch, Myriad Mines)", "category": "Mini-game", "cadence": "Recurring; ticket based", "how_it_monetizes": "Arcade tickets from orders; some collect events sell items needed to progress the mini-game", "score": "2", "evidence": "Variety layer; 'these often give IAP options to shortcut getting those items'.", "source": "Deconstructor of Fun; Gamigion; gossipharborguide.com"}, {"rank": "20", "event": "Medal Challenges", "category": "Long goal", "cadence": "30-34 days; 3 per 130 days", "how_it_monetizes": "Long-horizon goals layered under the season pass", "score": "2", "evidence": "Adds another long arc on top of passes and albums.", "source": "Gamigion"}, {"rank": "21", "event": "Daily Specials store (Energy Chest, Piggy Bank, Simple Pack)", "category": "Gem sink", "cadence": "Daily", "how_it_monetizes": "Energy Chest 10 gems or 1 ad; Piggy Bank 25 gems; Simple Pack free. Energy Chest becomes gem-only once a player has paid", "score": "2", "evidence": "Trains a daily low-gem spend; ad option removed for payers.", "source": "fan wiki; Deconstructor of Fun"}, {"rank": "22", "event": "Story chapters and order quests", "category": "Core meta", "cadence": "Weekly story updates", "how_it_monetizes": "Coins from orders unlock story and decoration; no direct IAP; keeps retention and willingness to spend", "score": "1", "evidence": "Weekly serialized updates work like a TV show; UA creatives lean on the story.", "source": "SocialPeta; Udonis"}], "sources": [{"name": "Deconstructor of Fun: Finding Genre Success", "url": "https://www.deconstructoroffun.com/blog/2024/8/19/finding-genre-success-the-case-of-gossip-harbor", "date": "Aug 2024", "what_it_gave": "Full teardown: season pass pricing, gem economy, offer structure, event breakdown"}, {"name": "AppMagic: Gossip Harbor's LiveOps Journey (via Mobidictum)", "url": "https://mobidictum.com/gossip-harbors-liveops/", "date": "Dec 2025", "what_it_gave": "LiveOps phases, events per month, revenue mix 62/18/10, Oct 2025 $62M"}, {"name": "Naavik: Gossip Harbor's Meteoric Rise in Merge", "url": "https://naavik.co/digest/gossip-harbors-meteoric-rise-in-merge/", "date": "Jun 2025", "what_it_gave": "ARPDAU, engagement vs Travel Town, 78% paid downloads, hybrid monetization"}, {"name": "Naavik: What Leading Match-3 and Merge Games Do Differently", "url": "https://naavik.co/digest/what-leading-match-3-and-merge-games-do-differently/", "date": "2026", "what_it_gave": "2025 revenue $650M+, IAP ARPDAU $0.31, ~$100M ad revenue"}, {"name": "Gamigion: LiveOps Cheatsheet", "url": "https://www.gamigion.com/gossip-harbor-liveops-cheatsheet/", "date": "Jun 2026", "what_it_gave": "130-day calendar: 281 instances, 64 types, offer and pass counts"}, {"name": "Gamigion: LiveOps Strategy Analysis", "url": "https://www.gamigion.com/liveops-strategy-analysis-of-gossip-harbor-by-microfun/", "date": "Apr 2026", "what_it_gave": "Six mechanic categories, decoy pricing, event cadence"}, {"name": "Gamigion: Live Ops Strategy (event list)", "url": "https://www.gamigion.com/gossip-harbors-live-ops-strategy/", "date": "Mar 2025", "what_it_gave": "Named events by category"}, {"name": "Udonis: How Gossip Harbor Became the Top-Grossing Merge Game", "url": "https://www.blog.udonis.co/mobile-marketing/mobile-games/gossip-harbor", "date": "Jul 2026", "what_it_gave": "DAU/MAU, downloads, US share of spend, ad share"}, {"name": "SocialPeta: How a Merge Game Won the U.S. Market", "url": "https://socialpeta.com/en/blog/the-new-rising-revenue-king-of-the-merge-genre-how-gossip-harbor-conquered-the-u-s-market", "date": "2024", "what_it_gave": "Aug 2024 revenue, holiday bundles, US DAU"}, {"name": "Friendly GameDev: LiveOps Playbook", "url": "https://friendlygamedev.com/blog/gossip-harbors-liveops-playbook/", "date": "2026", "what_it_gave": "Event layers (hourly to long-term), $100M March, $750M lifetime"}, {"name": "PocketGamer.biz: How Gossip Harbor builds live ops from day one", "url": "https://www.pocketgamer.biz/how-gossip-harbor-builds-live-ops-from-day-one/", "date": "Mar 2026", "what_it_gave": "Onboarding sequence of offers, season pass role"}, {"name": "GameDev Reports: AppMagic top games August 2026", "url": "https://gamedevreports.substack.com/p/appmagic-top-mobile-games-by-revenue-980", "date": "Sep 2026", "what_it_gave": "$112.3M August, $99.7M July"}, {"name": "Gossip Harbor Guide: events guide", "url": "https://gossipharborguide.com/guides/events-guide/", "date": "Sep 2026", "what_it_gave": "Event archetypes, player-side value ratings"}, {"name": "Gossip Harbor fan wiki", "url": "https://gossip-harbor.fandom.com/wiki/Events", "date": "2026", "what_it_gave": "Energy rules, event durations, store prices"}, {"name": "Apple App Store listing", "url": "https://apps.apple.com/us/app/gossip-harbor-merge-story/id1623318294", "date": "Nov 2026", "what_it_gave": "IAP price list, rating, current events"}]}</script>
+<script>
+(function () {
+  const D = JSON.parse(document.getElementById('data').textContent);
+  const $ = (id) => document.getElementById(id);
+  const fmt1 = (v) => v.toLocaleString('en', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  const fmtI = (v) => v.toLocaleString('en');
+  const fmtN = (v) => Number.isInteger(v) ? fmtI(v) : fmt1(v);
+  const NS = 'http://www.w3.org/2000/svg';
+  const el = (tag, attrs, text) => { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); if (text != null) e.textContent = text; return e; };
+  const cell = (tr, text) => { const td = document.createElement('td'); td.textContent = text == null ? '' : String(text); tr.appendChild(td); return td; };
+  const tipFor = (box) => {
+    const t = document.createElement('div'); t.className = 'tip'; t.hidden = true; box.appendChild(t);
+    return {
+      show(x, y, head, lines) {
+        t.replaceChildren(); const h = document.createElement('div'); h.className = 'h'; h.textContent = head; t.appendChild(h);
+        lines.forEach((l) => { const p = document.createElement('div'); p.textContent = l; t.appendChild(p); });
+        t.hidden = false;
+        t.style.left = Math.max(0, Math.min(box.clientWidth - t.offsetWidth, x + 12)) + 'px';
+        t.style.top = Math.max(0, y - t.offsetHeight - 12) + 'px';
+      },
+      hide() { t.hidden = true; }
+    };
+  };
+  const pt = (ev, box) => { const r = box.getBoundingClientRect(); return [ev.clientX - r.left, ev.clientY - r.top]; };
+
+  // Headline numbers
+  const mix = (c) => D.revenue_mix.find((r) => r.category === c);
+  const km = (m) => D.key_metrics.find((r) => r.metric === m);
+  $('t_offers').textContent = fmtN(Number(mix('Special offers & temporary bundles').share_pct));
+  $('t_gems').textContent = fmtN(Number(mix('Hard currency (gem packs)').share_pct));
+  $('t_pass').textContent = fmtN(Number(mix('Seasonal passes').share_pct));
+  $('t_best').textContent = fmt1(Number(D.revenue_timeline.find((r) => r.month === '2026-08').iap_revenue_musd));
+  $('k_best').textContent = fmt1(Number(km('best_month').value));
+  $('k_2025').textContent = fmtI(Number(km('rev_2025_net').value));
+  $('k_life').textContent = fmtI(Number(km('lifetime_iap').value));
+  $('k_arpdau').textContent = Number(km('arpdau_iap').value).toFixed(2);
+  $('k_events').textContent = fmtI(Number(km('events_month').value));
+
+  // Revenue bar chart
+  function drawRevenue() {
+    const box = $('rev_chart'); box.replaceChildren();
+    const rows = D.revenue_timeline.map((r) => ({ ...r, v: Number(r.iap_revenue_musd) })).sort((a, b) => a.month < b.month ? -1 : 1);
+    const W = Math.max(320, box.clientWidth || 640), H = 280, top = 16, bottom = 40;
+    const max = Math.max(...rows.map((r) => r.v)) * 1.12;
+    const svg = el('svg', { width: '100%', viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': 'Monthly IAP revenue in millions of US dollars' });
+    box.appendChild(svg);
+    const y = (v) => (H - bottom) - (v / max) * (H - bottom - top);
+    const step = max > 100 ? 25 : 20; const ticks = []; for (let t = 0; t <= max; t += step) ticks.push(t);
+    const axis = el('g', {}); svg.appendChild(axis);
+    let left = 8;
+    ticks.forEach((t) => { const tx = el('text', { x: 0, y: y(t) + 4, fill: 'var(--muted)', 'font-size': '11' }, '$' + t + 'M'); axis.appendChild(tx); left = Math.max(left, tx.getComputedTextLength() + 12); });
+    axis.querySelectorAll('text').forEach((tx) => tx.setAttribute('x', left - 8)); axis.querySelectorAll('text').forEach((tx) => tx.setAttribute('text-anchor', 'end'));
+    ticks.forEach((t) => svg.appendChild(el('line', { x1: left, x2: W - 8, y1: y(t), y2: y(t), stroke: 'var(--grid)' })));
+    const band = (W - 8 - left) / rows.length, bw = Math.min(32, band * 0.75);
+    const tip = tipFor(box);
+    rows.forEach((r, i) => {
+      const x = left + band * i + (band - bw) / 2;
+      const rect = el('rect', { x, y: y(r.v), width: bw, height: y(0) - y(r.v), rx: 3, fill: i === rows.length - 1 ? 'var(--accent)' : 'var(--bar-muted)' });
+      svg.appendChild(rect);
+      svg.appendChild(el('text', { x: x + bw / 2, y: y(r.v) - 5, 'text-anchor': 'middle', fill: 'var(--fg)', 'font-size': '11' }, fmt1(r.v)));
+      const every = Math.ceil(rows.length / Math.max(1, Math.floor((W - left) / 64)));
+      if (i % every === 0 || i === rows.length - 1) svg.appendChild(el('text', { x: x + bw / 2, y: H - 20, 'text-anchor': 'middle', fill: 'var(--muted)', 'font-size': '11' }, r.label));
+      rect.addEventListener('pointermove', (ev) => { const [px, py] = pt(ev, box); tip.show(px, py, r.label, ['$' + fmt1(r.v) + 'M IAP', r.basis, r.source]); });
+      rect.addEventListener('pointerleave', () => tip.hide());
+    });
+    svg.appendChild(el('line', { x1: left, x2: W - 8, y1: y(0), y2: y(0), stroke: 'var(--axis)' }));
+  }
+
+  // Revenue mix horizontal bars
+  function drawMix() {
+    const box = $('mix_chart'); box.replaceChildren();
+    const rows = D.revenue_mix.map((r) => ({ ...r, v: Number(r.share_pct) })).sort((a, b) => b.v - a.v);
+    const W = Math.max(280, box.clientWidth || 480), rowH = 44, H = rows.length * rowH + 8;
+    const svg = el('svg', { width: '100%', viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': 'Share of IAP revenue by purchase type' });
+    box.appendChild(svg); box.style.minHeight = H + 'px';
+    const tip = tipFor(box);
+    rows.forEach((r, i) => {
+      const g = el('g', { transform: `translate(0,${i * rowH + 4})` }); svg.appendChild(g);
+      const w = (r.v / 100) * (W - 48);
+      g.appendChild(el('text', { x: 0, y: 12, fill: 'var(--fg)', 'font-size': '12' }, r.category));
+      g.appendChild(el('rect', { x: 0, y: 18, height: 16, rx: 3, width: w, fill: i === 0 ? 'var(--accent)' : 'var(--bar-muted)' }));
+      g.appendChild(el('text', { x: w + 6, y: 30, fill: 'var(--fg)', 'font-size': '12' }, r.v + '%'));
+      g.addEventListener('pointermove', (ev) => { const [px, py] = pt(ev, box); tip.show(px, py, r.category, [r.v + '% of IAP revenue', r.what_it_is]); });
+      g.addEventListener('pointerleave', () => tip.hide());
+    });
+  }
+
+  // Phases table
+  (function () {
+    const tb = $('phases_body');
+    const rows = D.liveops_phases.map((r) => ({ ...r, n: Number(r.events_per_month) })).sort((a, b) => a.n - b.n);
+    const max = Math.max(...rows.map((r) => r.n));
+    rows.forEach((r) => {
+      const tr = document.createElement('tr');
+      cell(tr, r.phase); cell(tr, r.period);
+      const td = cell(tr, ''); td.className = 'bar';
+      const b = document.createElement('b'); b.style.width = (100 * r.n / max) + '%'; td.appendChild(b);
+      const s = document.createElement('span'); s.textContent = '~' + fmtI(r.n); td.appendChild(s);
+      cell(tr, r.introduced); cell(tr, r.monetization); tb.appendChild(tr);
+    });
+  })();
+
+  // Ranked events table with search, filter, sort
+  const state = { sort: 'rank', dir: 'asc', q: '', cat: '' };
+  const events = D.events.map((r) => ({ ...r, rank: Number(r.rank), score: Number(r.score) }));
+  const sel = $('ev-cat');
+  sel.replaceChildren(new Option('All categories', ''), ...Array.from(new Set(events.map((r) => r.category))).sort().map((c) => new Option(c)));
+  sel.addEventListener('change', () => { state.cat = sel.value; drawEvents(); });
+  $('ev-search').addEventListener('input', (e) => { state.q = e.target.value; drawEvents(); });
+  $('ev_total').textContent = fmtI(events.length);
+  document.querySelectorAll('.events th button[data-sort]').forEach((btn) => btn.addEventListener('click', () => {
+    const k = btn.dataset.sort;
+    if (state.sort === k) state.dir = state.dir === 'asc' ? 'desc' : 'asc'; else { state.sort = k; state.dir = k === 'score' ? 'desc' : 'asc'; }
+    document.querySelectorAll('.events th').forEach((th) => { const b = th.querySelector('button[data-sort]'); if (b && b.dataset.sort === state.sort) th.setAttribute('aria-sort', state.dir === 'asc' ? 'ascending' : 'descending'); else th.removeAttribute('aria-sort'); });
+    drawEvents();
+  }));
+  function drawEvents() {
+    const q = state.q.trim().toLowerCase();
+    let rows = events.slice();
+    if (state.cat) rows = rows.filter((r) => r.category === state.cat);
+    if (q) rows = rows.filter((r) => [r.event, r.category, r.cadence, r.how_it_monetizes, r.evidence, r.source].join(' ').toLowerCase().includes(q));
+    const k = state.sort, dir = state.dir === 'asc' ? 1 : -1;
+    rows.sort((a, b) => ((typeof a[k] === 'number') ? (a[k] - b[k]) : String(a[k]).localeCompare(String(b[k]))) * dir || a.rank - b.rank);
+    const tb = $('events_body'); tb.replaceChildren();
+    rows.forEach((r) => {
+      const tr = document.createElement('tr');
+      cell(tr, r.rank); cell(tr, r.event); cell(tr, r.category); cell(tr, r.cadence); cell(tr, r.how_it_monetizes);
+      const td = cell(tr, ''); const sc = document.createElement('span'); sc.className = 'score';
+      for (let i = 1; i <= 5; i++) { const dot = document.createElement('i'); if (i <= r.score) dot.className = 'on'; sc.appendChild(dot); }
+      const n = document.createElement('span'); n.textContent = String(r.score); sc.appendChild(n); td.appendChild(sc);
+      cell(tr, r.evidence); cell(tr, r.source); tb.appendChild(tr);
+    });
+    $('ev_count').textContent = fmtI(rows.length);
+  }
+  drawEvents();
+
+  // Calendar and key metrics
+  D.calendar_130d.forEach((r) => { const tr = document.createElement('tr'); cell(tr, r.metric); const v = Number(r.value); cell(tr, Number.isFinite(v) ? fmtN(v) : r.value); $('cal_body').appendChild(tr); });
+  D.key_metrics.forEach((r) => {
+    const tr = document.createElement('tr'); cell(tr, r.label);
+    const v = Number(r.value), unit = String(r.unit || ''); let txt;
+    if (!Number.isFinite(v)) txt = r.value;
+    else if (unit.startsWith('M USD')) txt = '$' + fmtN(v) + 'M';
+    else if (unit === 'USD') txt = '$' + v.toFixed(2);
+    else if (unit === 'M') txt = fmt1(v) + 'M';
+    else if (unit.startsWith('%')) txt = v + unit;
+    else txt = fmtN(v) + ' ' + unit;
+    cell(tr, txt); cell(tr, r.period); cell(tr, r.source); $('metrics_body').appendChild(tr);
+  });
+  D.sources.forEach((r) => {
+    const tr = document.createElement('tr'); const td = cell(tr, '');
+    if (/^https:\/\//.test(r.url)) { const a = document.createElement('a'); a.href = r.url; a.target = '_blank'; a.rel = 'noopener'; a.textContent = r.name; td.appendChild(a); } else td.textContent = r.name;
+    cell(tr, r.date); cell(tr, r.what_it_gave); $('src_body').appendChild(tr);
+  });
+
+  drawRevenue(); drawMix();
+  let raf; window.addEventListener('resize', () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(() => { drawRevenue(); drawMix(); }); });
+})();
+</script>
+</body>
+</html>
